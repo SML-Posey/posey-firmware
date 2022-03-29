@@ -1,0 +1,5 @@
+menuconfig BNO08x
+	bool "BNO08x I2C/SPI IMU"
+	depends on I2C || SPI
+	help
+	  Enable driver for BNO08x IMU.

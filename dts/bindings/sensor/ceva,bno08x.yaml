@@ -1,0 +1,11 @@
+description: CEVA BNO08x 9DoF IMU
+
+compatible: "ceva,bno08x"
+
+include: i2c-device.yaml
+
+properties:
+    irq-gpios:
+      # This signal is active low when produced by the sensor
+      type: phandle-array
+      required: true

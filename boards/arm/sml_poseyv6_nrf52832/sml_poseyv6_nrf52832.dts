@@ -1,0 +1,90 @@
+/dts-v1/;
+#include <nordic/nrf52832_ciaa.dtsi>
+
+/ {
+	model = "SML Posey-v6 WATCH nRF52832";
+	compatible = "sml,sml-poseyv6-nrf52832";
+
+	chosen {
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+    gpiopins {
+        compatible = "gpio-keys";
+        gpio_nPGOOD: gpiopin_0 {
+            gpios = <&gpio0 9 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "nPGOOD";
+        };
+        gpio_nCHG: gpiopin_1 {
+            gpios = <&gpio0 8 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "nCHG";
+        };
+        gpio_IMU_nRESET: gpiopin_2 {
+            gpios = <&gpio0 17 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "IMU_nRESET";
+        };
+        gpio_SPI_CS_MEM: gpiopin_3 {
+            gpios = <&gpio0 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            label = "SPI_CS_MEM";
+        };
+    };
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&i2c0 {
+	compatible = "nordic,nrf-twi";
+	status = "okay";
+	sda-pin = <12>;
+	scl-pin = <15>;
+    clock-frequency = <400000>;
+
+    bno08x0: bno08x@4a {
+        compatible = "ceva,bno08x";
+        label = "imu";
+        reg = <0x4a>;
+        irq-gpios = <&gpio0 16 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+};
+
+&spi0 {
+	compatible = "nordic,nrf-spi";
+	status = "okay";
+	sck-pin = <3>;
+	mosi-pin = <5>;
+	miso-pin = <2>;
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x0 0xc000>;
+		};
+		slot0_partition: partition@c000 {
+			label = "image-0";
+			reg = <0xc000 0x32000>;
+		};
+		slot1_partition: partition@3e000 {
+			label = "image-1";
+			reg = <0x3e000 0x32000>;
+		};
+		scratch_partition: partition@70000 {
+			label = "image-scratch";
+			reg = <0x70000 0xa000>;
+		};
+		storage_partition: partition@7a000 {
+			label = "storage";
+			reg = <0x7a000 0x6000>;
+		};
+	};
+};
+
