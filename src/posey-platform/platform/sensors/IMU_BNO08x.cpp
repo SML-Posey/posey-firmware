@@ -32,20 +32,28 @@ bool IMU_BNO08x::collect()
 {
     data.time = Clock::get_usec<uint32_t>();
 
+    data.An = _data->an;
+    data.Gn = _data->gn;
+    data.Mn = _data->mn;
+    data.Qn = _data->qn;
+
     data.Ax = _data->ax;
     data.Ay = _data->ay;
     data.Az = _data->az;
+
     data.Gx = _data->gx;
     data.Gy = _data->gy;
     data.Gz = _data->gz;
+
     data.Mx = _data->mx;
     data.My = _data->my;
     data.Mz = _data->mz;
-    // data.Qi = _data->qi;
-    // data.Qj = _data->qj;
-    // data.Qk = _data->qk;
-    // data.Qr = _data->qr;
-    // data.Qacc = _data->qacc;
+
+    data.Qi = _data->qi;
+    data.Qj = _data->qj;
+    data.Qk = _data->qk;
+    data.Qr = _data->qr;
+    data.Qacc = _data->qacc;
 
 	static uint32_t t0 = k_cyc_to_ms_floor32(sys_clock_tick_get());
 	static uint32_t irqn0 = 0, an0 = 0, gn0 = 0, mn0 = 0, qn0 = 0;
