@@ -18,7 +18,7 @@ ZephyrSerialWriter writer(uart);
 ZephyrSerialReader reader(uart);
 #endif
 
-IMU_Stub imu;
+IMU_BNO08x imu;
 
 bool init_platform()
 {

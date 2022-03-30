@@ -9,7 +9,7 @@
 #include "platform/BaseRateTask.hpp"
 
 #include "posey-platform/platform/ZephyrClock.hpp"
-#include "posey-platform/platform/sensors/IMU_Stub.hpp"
+#include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 
 using Clock = ZephyrClock;
 
@@ -34,6 +34,6 @@ extern ZephyrSerialReader reader;
 extern ZephyrSerialWriter writer;
 #endif
 
-extern IMU_Stub imu;
+extern IMU_BNO08x imu;
 
 bool init_platform();

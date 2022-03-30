@@ -318,7 +318,10 @@ static int hal_enable_report(
 // Handle sensor events.
 static void hal_sensorHandler(void *cookie, sh2_SensorEvent_t *event)
 {
+	if (cookie == NULL) return;
 	struct bno08x_data * data = ((struct device *)cookie)->data;
+	if (data == NULL) return;
+	if (data->sh2_sensor_value == NULL) return;
 
     int rc = sh2_decodeSensorEvent(data->sh2_sensor_value, event);
     if (rc != SH2_OK)
@@ -332,9 +335,11 @@ static void bno08x_trigger_handler(
 	const struct device *dev,
 	const struct sensor_trigger *trig)
 {
+	if (dev == NULL) return;
 	struct bno08x_data * data = dev->data;
+	if (data == NULL) return;
 
-	++data->irqn;
+	data->irqn += 1;
 
 	sh2_SensorValue_t value;
 	data->sh2_sensor_value = &value;
@@ -388,6 +393,8 @@ static void bno08x_trigger_handler(
 			LOG_WRN("Unhandled message: %x", value.sensorId);
 		}
 	}
+
+	data->sh2_sensor_value = NULL;
 }
 
 static int bno08x_init_chip(const struct device *dev)
@@ -417,6 +424,7 @@ static int bno08x_init_chip(const struct device *dev)
 	data->qr = 0;
     data->qacc = 0;
 
+	data->sh2_sensor_value = NULL;
 	data->hw_tf = NULL;
 	data->dev = dev;
     data->gpio = NULL;
@@ -504,25 +512,25 @@ static int bno08x_init(const struct device *dev)
 		return ret;
 	}
 
-	ret = hal_enable_report(SH2_ACCELEROMETER, 10000);
+	ret = hal_enable_report(SH2_ACCELEROMETER, 40000);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable accelerometer report");
 		return ret;
 	}
-	ret = hal_enable_report(SH2_GYROSCOPE_CALIBRATED, 10000);
+	ret = hal_enable_report(SH2_GYROSCOPE_CALIBRATED, 40000);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable gyroscope report");
 		return ret;
 	}
-	ret = hal_enable_report(SH2_MAGNETIC_FIELD_CALIBRATED, 10000);
+	ret = hal_enable_report(SH2_MAGNETIC_FIELD_CALIBRATED, 40000);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable magnetic field report");
 		return ret;
 	}
-	ret = hal_enable_report(SH2_ROTATION_VECTOR, 10000);
+	ret = hal_enable_report(SH2_ROTATION_VECTOR, 40000);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable rotation report");

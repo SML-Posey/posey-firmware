@@ -23,7 +23,10 @@ void main()
     if (rtmain.setup())
     {
         LOG_INF("Setup complete. Entering loop.\n");
-        while (true) rtmain.loop();
+        while (true)
+        {
+            rtmain.loop();
+        }
     }
     else die("rtmain.setup() failed.");
 }
