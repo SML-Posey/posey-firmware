@@ -4,13 +4,14 @@
 &i2c0 {
 	compatible = "nordic,nrf-twi";
 	status = "okay";
-    clock-frequency = <400000>;
+	sda-pin = <12>;
+	scl-pin = <15>;
+    clock-frequency = <100000>;
 
     bno08x0: bno08x@4a {
         compatible = "ceva,bno08x";
         label = "imu";
         reg = <0x4a>;
-        irq-gpios = <&gpio0 31 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        irq-gpios = <&gpio0 16 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
     };
 };
-
