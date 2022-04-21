@@ -18,5 +18,5 @@ class ZephyrSerialWriter : public BaseMessageWriter
         }
 
     private:
-        const device * uart;
+        const device * uart = nullptr;
 };

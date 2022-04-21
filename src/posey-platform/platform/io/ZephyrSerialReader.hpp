@@ -25,5 +25,5 @@ class ZephyrSerialReader : public BaseMessageReader
         }
 
     private:
-        const device * uart;
+        const device * uart = nullptr;
 };
