@@ -10,6 +10,7 @@
 
 #include "posey-platform/platform/ZephyrClock.hpp"
 #include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
+#include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 
 using Clock = ZephyrClock;
 
@@ -35,5 +36,6 @@ extern ZephyrSerialWriter writer;
 #endif
 
 extern IMU_BNO08x imu;
+extern BLE_Zephyr ble;
 
 bool init_platform();

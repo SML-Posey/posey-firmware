@@ -15,8 +15,8 @@ void die(const char * const message)
 
 void main()
 {
-    TaskMain taskmain(imu, reader, writer);
-    RateTask rtmain(taskmain, 25);
+    TaskMain taskmain(imu, ble, reader, writer);
+    RateTask rtmain(taskmain, 50);
 
     if (!init_platform()) die("Platform init failed.");
 

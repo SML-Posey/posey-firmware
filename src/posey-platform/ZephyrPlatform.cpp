@@ -19,6 +19,7 @@ ZephyrSerialReader reader(uart);
 #endif
 
 IMU_BNO08x imu;
+BLE_Zephyr ble;
 
 bool init_platform()
 {
