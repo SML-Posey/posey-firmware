@@ -440,14 +440,8 @@ static int bno08x_init_sh2(const struct device *dev)
     hal_hardwareReset();
 
 	// Wait for BNO08x to boot.
-	LOG_INF("Waiting...");
-	k_sleep(K_MSEC(500));
-	LOG_INF("Waiting...");
-	k_sleep(K_MSEC(500));
-	LOG_INF("Waiting...");
-	k_sleep(K_MSEC(500));
-	LOG_INF("Waiting...");
-	k_sleep(K_MSEC(500));
+	LOG_INF("BNO08x wait delay...");
+	k_sleep(K_MSEC(1000));
 
     // Open SH2 interface (also registers non-sensor event handler.)
     int status = sh2_open(&data->sh2_hal, hal_callback, NULL);
@@ -512,25 +506,37 @@ static int bno08x_init(const struct device *dev)
 		return ret;
 	}
 
-	ret = hal_enable_report(SH2_ACCELEROMETER, 40000);
+	// TODO: Something weird is going on with the reporting rates. They work
+	// when used individually, but together they give weird results, sometimes
+	// higher (usually accel) sometimes lower (rot).
+
+	// TODO 2: This probably has to do with the internal pull-up resistance being
+	// way too high (13k). It sorta works with the BNO085 I believe because that
+	// board has 10k pull-ups, bringing the total resistance down to ~5k, but
+	// that's still too high for even 100kHz operation. We might get closer with
+	// the 100kHz I2C mode.
+
+	static const uint32_t period_us = 20000;
+
+	ret = hal_enable_report(SH2_ACCELEROMETER, period_us);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable accelerometer report");
 		return ret;
 	}
-	ret = hal_enable_report(SH2_GYROSCOPE_CALIBRATED, 40000);
-	if (ret != 0)
-	{
-		LOG_ERR("Failed to enable gyroscope report");
-		return ret;
-	}
-	ret = hal_enable_report(SH2_MAGNETIC_FIELD_CALIBRATED, 40000);
-	if (ret != 0)
-	{
-		LOG_ERR("Failed to enable magnetic field report");
-		return ret;
-	}
-	ret = hal_enable_report(SH2_ROTATION_VECTOR, 40000);
+	// ret = hal_enable_report(SH2_GYROSCOPE_CALIBRATED, period_us);
+	// if (ret != 0)
+	// {
+	// 	LOG_ERR("Failed to enable gyroscope report");
+	// 	return ret;
+	// }
+	// ret = hal_enable_report(SH2_MAGNETIC_FIELD_CALIBRATED, period_us);
+	// if (ret != 0)
+	// {
+	// 	LOG_ERR("Failed to enable magnetic field report");
+	// 	return ret;
+	// }
+	ret = hal_enable_report(SH2_ROTATION_VECTOR, period_us);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable rotation report");

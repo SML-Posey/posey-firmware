@@ -21,19 +21,11 @@ typedef BaseRateLimiter<
 
 typedef BaseRateTask<RateLimiter> RateTask;
 
-#if CONFIG_BT_NUS_ENABLED
 #include "posey-platform/platform/io/NordicNUSReader.hpp"
 #include "posey-platform/platform/io/NordicNUSWriter.hpp"
 
 extern NordicNUSReader reader;
 extern NordicNUSWriter writer;
-#else
-#include "posey-platform/platform/io/ZephyrSerialReader.hpp"
-#include "posey-platform/platform/io/ZephyrSerialWriter.hpp"
-
-extern ZephyrSerialReader reader;
-extern ZephyrSerialWriter writer;
-#endif
 
 extern IMU_BNO08x imu;
 extern BLE_Zephyr ble;

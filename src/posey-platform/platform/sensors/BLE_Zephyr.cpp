@@ -37,8 +37,8 @@ bool BLE_Zephyr::setup()
     {
         reference = this;
 
-        static const uint16_t BT_PERIOD_1000ms = 0x0650;
-        static const uint16_t BT_PERIOD_100ms  = 0x00a0;
+        // static const uint16_t BT_PERIOD_1000ms = 0x0650;
+        // static const uint16_t BT_PERIOD_100ms  = 0x00a0;
 
         // static const uint16_t BT_SCAN_INTERVAL = BT_PERIOD_1000ms;
         // static const uint16_t BT_SCAN_WINDOW   = BT_PERIOD_100ms;

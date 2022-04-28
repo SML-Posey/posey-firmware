@@ -37,17 +37,16 @@ class ZephyrClock
         template <class T>
         static void delay_usec(const T delay)
         {
-            uint32_t delay_us = static_cast<uint32_t>(delay);
-            if (delay_us < USEC_PER_MSEC) {
-                k_busy_wait(delay_us);
+            if (delay < USEC_PER_MSEC) {
+                k_busy_wait(static_cast<uint32_t>(delay));
             } else {
-                delay_msec(delay_us / USEC_PER_MSEC);
+                delay_msec(delay / USEC_PER_MSEC);
             }
         }
 
         template <class T>
         static void delay_msec(const T delay)
         {
-            k_msleep(delay);
+            k_sleep(K_MSEC(delay));
         }
 };
