@@ -1,12 +1,12 @@
 #define DT_DRV_COMPAT ceva_bno08x
 
-#include <kernel.h>
-#include <device.h>
-#include <init.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/init.h>
 #include <string.h>
-#include <sys/byteorder.h>
-#include <sys/__assert.h>
-#include <logging/log.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/sys/__assert.h>
+#include <zephyr/logging/log.h>
 
 #include "bno08x.h"
 
@@ -486,6 +486,8 @@ static int bno08x_init(const struct device *dev)
 		LOG_ERR("Failed to initialize chip");
 		return ret;
 	}
+
+	// return 0; // TODO: ATW: DELETE.
 
 	for (int i = 0; i < 3; ++i)
 	{
