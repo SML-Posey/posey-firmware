@@ -1,8 +1,8 @@
 #pragma once
 
-#include <zephyr.h>
-#include <device.h>
-#include <drivers/uart.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/uart.h>
 
 #include "platform/io/BaseMessageReader.hpp"
 

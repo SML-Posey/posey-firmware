@@ -2,14 +2,13 @@
 
 #define PLATFORM_POSEY
 
-#include <zephyr.h>
-#include <logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 
 #include "platform/BaseRateLimiter.hpp"
 #include "platform/BaseRateTask.hpp"
 
 #include "posey-platform/platform/ZephyrClock.hpp"
-#include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 #include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 
 using Clock = ZephyrClock;
@@ -27,7 +26,24 @@ typedef BaseRateTask<RateLimiter> RateTask;
 extern NordicNUSReader reader;
 extern NordicNUSWriter writer;
 
+#ifdef CONFIG_BNO08x
+#include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 extern IMU_BNO08x imu;
+#else
+#include "posey-platform/platform/sensors/IMU_Stub.hpp"
+extern IMU_Stub imu;
+#endif
+
 extern BLE_Zephyr ble;
+
+#if defined(CONFIG_ROLE_HUB)
+#include "tasks/TaskWaist.hpp"
+#elif defined(CONFIG_ROLE_WATCH)
+#include "tasks/TaskWatch.hpp"
+#elif defined(CONFIG_ROLE_RING)
+#include "tasks/TaskRing.hpp"
+#else
+#error "No valid role defined!"
+#endif
 
 bool init_platform();

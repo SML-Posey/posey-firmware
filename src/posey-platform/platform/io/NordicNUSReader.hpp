@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zephyr.h>
-#include <bluetooth/bluetooth.h>
+#include <zephyr/kernel.h>
+#include <zephyr/bluetooth/bluetooth.h>
 #include <bluetooth/services/nus.h>
 
 #include "platform/io/BaseMessageReader.hpp"

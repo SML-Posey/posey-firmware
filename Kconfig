@@ -1,2 +1,16 @@
 rsource "drivers/sensor/bno08x/Kconfig"
 source "Kconfig.zephyr"
+
+choice
+    prompt "Select a project role."
+    default ROLE_UNDEFINED
+
+    config ROLE_HUB
+         bool "Hub (waist) role"
+    config ROLE_WATCH
+         bool "Watch role"
+    config ROLE_RING
+         bool "Ring role"
+    config ROLE_UNDEFINED
+        bool "Undefined role"
+endchoice

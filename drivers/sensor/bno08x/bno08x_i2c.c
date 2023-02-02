@@ -1,7 +1,7 @@
 #define DT_DRV_COMPAT ceva_bno08x
 
 #include <string.h>
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 #include "bno08x.h"
 

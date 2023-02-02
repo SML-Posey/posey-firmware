@@ -2,8 +2,8 @@
 
 #include <zephyr/types.h>
 #include <stddef.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/hci.h>
 
 #include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 

@@ -17,12 +17,17 @@ bool IMU_Stub::collect()
     data.Ax = 1;
     data.Ay = 2;
     data.Az = 3;
-    data.Gx = 11;
-    data.Gy = 12;
-    data.Gz = 13;
-    data.Mx = 111;
-    data.My = 112;
-    data.Mz = 113;
+    // data.Gx = 11;
+    // data.Gy = 12;
+    // data.Gz = 13;
+    // data.Mx = 111;
+    // data.My = 112;
+    // data.Mz = 113;
+    data.Qr = 1111;
+    data.Qi = 1112;
+    data.Qj = 1113;
+    data.Qk = 1114;
+    data.Qacc = 1115;
 
     return true;
 }

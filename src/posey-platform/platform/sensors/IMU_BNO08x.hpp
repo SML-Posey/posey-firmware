@@ -1,7 +1,7 @@
 #pragma once
 
-#include <zephyr.h>
-#include <device.h>
+#include <zephyr/kernel.h>
+#include <zephyr/device.h>
 
 #include "platform/sensors/BaseIMU.hpp"
 

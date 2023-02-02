@@ -1,22 +1,23 @@
 #include "NordicNUSDriver.h"
 
 #include <zephyr/types.h>
-#include <zephyr.h>
+#include <zephyr/kernel.h>
 
-#include <device.h>
+#include <zephyr/device.h>
 #include <soc.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/uuid.h>
-#include <bluetooth/gatt.h>
-#include <bluetooth/hci.h>
-
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/gatt.h>
+#include <zephyr/bluetooth/hci.h>
 #include <bluetooth/services/nus.h>
 
 #include <stdio.h>
 
-#include <settings/settings.h>
-#include <logging/log.h>
+#include <zephyr/settings/settings.h>
+#include <zephyr/logging/log.h>
+
+#include "platform/config.h"
 
 #define LOG_MODULE_NAME posey_nus_uart
 LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
@@ -27,7 +28,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
 static struct bt_conn *current_conn = NULL;
 static struct bt_conn *auth_conn = NULL;
 
-static const struct bt_data ad[] = {
+static struct bt_data ad[2] = {
 	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
 	BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
 };
@@ -48,7 +49,7 @@ static void connected(
 	}
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-	LOG_INF("Connected %s", log_strdup(addr));
+	LOG_INF("Connected %s", addr);
 
 	current_conn = bt_conn_ref(conn);
 }
@@ -61,7 +62,7 @@ static void disconnected(
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
-	LOG_INF("Disconnected: %s (reason %x)", log_strdup(addr), reason);
+	LOG_INF("Disconnected: %s (reason %x)", addr, reason);
 
 	if (auth_conn) {
 		bt_conn_unref(auth_conn);
@@ -84,12 +85,12 @@ static void bt_receive_cb(
 	const uint8_t *const data,
 	uint16_t len)
 {
-	int err;
+	// int err;
 	char addr[BT_ADDR_LE_STR_LEN] = {0};
 
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, ARRAY_SIZE(addr));
 
-	LOG_INF("Received %d bytes from %s. Ignoring.", len, log_strdup(addr));
+	LOG_INF("Received %d bytes from %s. Ignoring.", len, addr);
 }
 
 static struct bt_nus_cb nus_cb = {
@@ -117,6 +118,11 @@ int init_nus()
 		LOG_ERR("bt_nus_init: Failed to initialize UART service (err: %d)", err);
 		return err;
 	}
+
+	// Update the BLE name using the device config.
+	size_t name_len = strlen(device_config.name);
+	ad[1].data = device_config.name;
+	ad[1].data_len = name_len;
 
 	err = bt_le_adv_start(
 		BT_LE_ADV_CONN,

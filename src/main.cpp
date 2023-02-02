@@ -1,5 +1,4 @@
 #include "platform.hpp"
-#include "tasks/TaskMain.hpp"
 
 #define LOG_MODULE_NAME posey_main
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -13,10 +12,16 @@ void die(const char * const message)
     }
 }
 
-void main()
+int main()
 {
-    TaskMain taskmain(imu, ble, reader, writer);
-    RateTask rtmain(taskmain, 50);
+    #if defined(CONFIG_ROLE_HUB)
+    TaskHub task(imu, ble, reader, writer);
+    #elif defined(CONFIG_ROLE_WATCH)
+    TaskWatch task(imu, writer);
+    #elif defined(CONFIG_ROLE_RING)
+    TaskRing task();
+    #endif
+    RateTask rtmain(task, 50);
 
     if (!init_platform()) die("Platform init failed.");
 
@@ -29,4 +34,5 @@ void main()
         }
     }
     else die("rtmain.setup() failed.");
+    return 0;
 }

@@ -1,12 +1,12 @@
 #define DT_DRV_COMPAT ceva_bno08x
 
-#include <device.h>
-#include <drivers/i2c.h>
-#include <sys/__assert.h>
-#include <sys/util.h>
-#include <kernel.h>
-#include <drivers/sensor.h>
-#include <logging/log.h>
+#include <zephyr/device.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/sys/__assert.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/sensor.h>
+#include <zephyr/logging/log.h>
 
 #include "bno08x.h"
 
@@ -80,7 +80,7 @@ static void bno08x_gpio_callback(
 
 static void bno08x_thread_cb(const struct device *dev)
 {
-	const struct bno08x_config *config = dev->config;
+	// const struct bno08x_config *config = dev->config;
 	struct bno08x_data *drv_data = dev->data;
 
 	if (drv_data->data_ready_handler != NULL) {

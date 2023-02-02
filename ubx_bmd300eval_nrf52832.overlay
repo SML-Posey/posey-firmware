@@ -18,6 +18,11 @@
 	};
 };
 
+// Needed for BNO08x driver config. Might need to trace exactly why...
+&gpio0 {
+	label = "gpio0";
+};
+
 &i2c0 {
 	compatible = "nordic,nrf-twi";
 	status = "okay";
