@@ -1,21 +1,44 @@
 // To get started, press Ctrl+Space (or Option+Esc) to bring up the completion menu and view the available nodes.
 // For more help, browse the DeviceTree documentation at https://docs.zephyrproject.org/latest/guides/dts/index.html
 
-&pinctrl {
-	i2c0_default: i2c0_default {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 12)>,
-				<NRF_PSEL(TWIM_SCL, 0, 15)>;
-		};
+/ {
+	aliases {
+		spi-flash0 = &w25q128;
 	};
+};
 
-	i2c0_sleep: i2c0_sleep {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 0, 12)>,
-				<NRF_PSEL(TWIM_SCL, 0, 15)>;
-			low-power-enable;
-		};
-	};
+&pinctrl {
+	// i2c0_default: i2c0_default {
+	// 	group1 {
+	// 		psels = <NRF_PSEL(TWIM_SDA, 0, 12)>,
+	// 			<NRF_PSEL(TWIM_SCL, 0, 15)>;
+	// 	};
+	// };
+
+	// i2c0_sleep: i2c0_sleep {
+	// 	group1 {
+	// 		psels = <NRF_PSEL(TWIM_SDA, 0, 12)>,
+	// 			<NRF_PSEL(TWIM_SCL, 0, 15)>;
+	// 		low-power-enable;
+	// 	};
+	// };
+
+    spi1_evk_default: spi1_evk_default {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 0, 18)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 16)>,
+                <NRF_PSEL(SPIM_MISO, 0, 15)>;
+        };
+    };
+
+    spi1_evk_sleep: spi1_evk_sleep {
+        group1 {
+            psels = <NRF_PSEL(SPIM_SCK, 0, 18)>,
+                <NRF_PSEL(SPIM_MOSI, 0, 16)>,
+                <NRF_PSEL(SPIM_MISO, 0, 15)>;
+            low-power-enable;
+        };
+    };
 };
 
 // Needed for BNO08x driver config. Might need to trace exactly why...
@@ -32,6 +55,24 @@
         compatible = "ceva,bno08x";
         label = "imu";
         reg = <0x4a>;
-        irq-gpios = <&gpio0 16 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        irq-gpios = <&gpio0 17 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
     };
+};
+
+&spi1 {
+	compatible = "nordic,nrf-spi";
+	status = "okay";
+	pinctrl-0 = <&spi1_evk_default>;
+	pinctrl-1 = <&spi1_evk_sleep>;
+	pinctrl-names = "default", "sleep";
+	cs-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+
+	w25q128: w25q128c@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <100000000>;
+		size = <0x8000000>; // 128 MBit
+		has-dpd;
+		jedec-id = [ef 40 18];
+	};
 };

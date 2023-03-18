@@ -15,7 +15,7 @@ void die(const char * const message)
 int main()
 {
     #if defined(CONFIG_ROLE_HUB)
-    TaskHub task(imu, ble, reader, writer);
+    TaskWaist task(imu, ble, reader, writer);
     #elif defined(CONFIG_ROLE_WATCH)
     TaskWatch task(imu, writer);
     #elif defined(CONFIG_ROLE_RING)

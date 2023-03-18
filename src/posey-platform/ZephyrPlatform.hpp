@@ -9,7 +9,6 @@
 #include "platform/BaseRateTask.hpp"
 
 #include "posey-platform/platform/ZephyrClock.hpp"
-#include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 
 using Clock = ZephyrClock;
 
@@ -34,9 +33,11 @@ extern IMU_BNO08x imu;
 extern IMU_Stub imu;
 #endif
 
-extern BLE_Zephyr ble;
 
 #if defined(CONFIG_ROLE_HUB)
+#include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
+extern BLE_Zephyr ble;
+
 #include "tasks/TaskWaist.hpp"
 #elif defined(CONFIG_ROLE_WATCH)
 #include "tasks/TaskWatch.hpp"

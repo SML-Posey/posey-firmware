@@ -70,7 +70,9 @@ bool IMU_BNO08x::collect()
             mn1 = _data->mn,
             qn1 = _data->qn;
         float dt = (t1 - t0)*1.0e-3;
-        uint32_t dirqn = irqn1 - irqn0, dan = an1 - an0, dgn = gn1 - gn0, dmn = mn1 - mn0, dqn = qn1 - qn0;
+        uint32_t dirqn = irqn1 - irqn0, dan = an1 - an0;
+        // uint32_t dgn = gn1 - gn0, dmn = mn1 - mn0;
+        uint32_t dqn = qn1 - qn0;
         t0 = t1;
         irqn0 = irqn1;
         an0 = an1;

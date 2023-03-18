@@ -465,7 +465,7 @@ static int bno08x_init_sh2(const struct device *dev)
 	}
 
     // Register sensor listener
-    sh2_setSensorCallback(hal_sensorHandler, dev);
+    sh2_setSensorCallback(hal_sensorHandler, (void *)dev);
 
 	return 0;
 }

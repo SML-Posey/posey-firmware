@@ -17,6 +17,7 @@ static void BLE_Zephyr_callback(
 	uint8_t type,
 	struct net_buf_simple *ad)
 {
+    // ATW: TODO: Change to iBeacon detection.
     if (BLE_Zephyr::reference)
     {
         BLE_Zephyr::reference->add_detection(

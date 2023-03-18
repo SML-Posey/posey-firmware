@@ -22,7 +22,10 @@ IMU_BNO08x imu;
 #else
 IMU_Stub imu;
 #endif
+
+#ifdef CONFIG_ROLE_HUB
 BLE_Zephyr ble;
+#endif
 
 #define NVS_PARTITION			storage_partition
 #define NVS_PARTITION_DEVICE	FIXED_PARTITION_DEVICE(NVS_PARTITION)
@@ -38,6 +41,17 @@ static bool read_device_config_param(
 {
     int rc = nvs_read(&fs, id, buffer, DeviceConfigBufferSize);
     if (rc > 0) LOG_INF("DeviceConfig[%s]: %s", name, buffer);
+    else LOG_ERR("DeviceConfig[%s]: Not found!!", name);
+    return rc > 0;
+}
+
+static bool read_device_config_param(
+    const char * const name,
+    const int id,
+    uint32_t & value)
+{
+    int rc = nvs_read(&fs, id, &value, DeviceConfigBufferSize);
+    if (rc > 0) LOG_INF("DeviceConfig[%s]: %d", name, value);
     else LOG_ERR("DeviceConfig[%s]: Not found!!", name);
     return rc > 0;
 }
@@ -74,8 +88,41 @@ static bool read_device_config()
     okay &= read_device_config_param("hw", 3, device_config.hw);
     okay &= read_device_config_param("sw", 4, device_config.sw);
     okay &= read_device_config_param("datetime", 5, device_config.dt);
+    
+    if (!read_device_config_param("data_dt", 6, device_config.data_dt))
+        config_update_data_dt("2023-02-10 13:42 EST");
+    if (!read_device_config_param("data_end", 7, device_config.data_end))
+        config_update_data_end(0);
+    if (!read_device_config_param("data_start_ms", 8, device_config.data_start_ms))
+        config_update_data_start_ms(0);
+    if (!read_device_config_param("data_end_ms", 9, device_config.data_end_ms))
+        config_update_data_end_ms(0);
 
     return okay;
+}
+
+void config_update_data_dt(const char * dt)
+{
+    LOG_INF("Setting new data date/time: %s", dt);
+	nvs_write(&fs, 6, dt, strlen(dt)+1);
+}
+
+void config_update_data_end(const uint32_t offset)
+{
+    LOG_INF("Setting new data end offset: %d", offset);
+    nvs_write(&fs, 7, &offset, sizeof(offset));
+}
+
+void config_update_data_start_ms(const uint32_t ms)
+{
+    LOG_INF("Setting new data start time (ms): %d", ms);
+    nvs_write(&fs, 8, &ms, sizeof(ms));
+}
+
+void config_update_data_end_ms(const uint32_t ms)
+{
+    LOG_INF("Setting new data end time (ms): %d", ms);
+    nvs_write(&fs, 9, &ms, sizeof(ms));
 }
 
 bool init_platform()
