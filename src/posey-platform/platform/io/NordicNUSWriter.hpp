@@ -13,13 +13,14 @@ class NordicNUSWriter : public BaseMessageWriter
 
         uint16_t write(
             const uint8_t * src_buffer,
-            const uint16_t src_size) override
+            const uint16_t src_size,
+            const bool immediate = false) override
         {
             uint16_t remaining = src_size;
             while (remaining > 0)
             {
                 remaining = add_to_nus_buffer(src_buffer, src_size, remaining);
-                if (nus_buffer_full()) transmit_nus_buffer();
+                if (immediate || nus_buffer_full()) transmit_nus_buffer();
             }
             return src_size;
         }

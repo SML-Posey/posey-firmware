@@ -46,7 +46,7 @@ static char * names[MaxConnections] = {
     "Posey w8 Thistle",
     "Posey w8 Flox",
     "Posey r2 Tulip",
-    NULL // PC connection.
+    "<PC>" // PC connection.
 };
 static struct bt_conn * connections[MaxConnections] = {
     NULL,
@@ -60,7 +60,7 @@ static struct bt_conn * connections[MaxConnections] = {
 #define PCConnection (MaxConnections - 1)
 
 static char * names[MaxConnections] = {
-    NULL // PC connection.
+    "<PC>" // PC connection.
 };
 static struct bt_conn * connections[MaxConnections] = {
     NULL
@@ -153,6 +153,7 @@ static void scan_filter_match(
     bool connectable)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
+    LOG_INF("NordicNUSDriver::scan_filter_match");
     bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
     // Matching a device by name?
@@ -192,6 +193,7 @@ BT_SCAN_CB_INIT(scan_cb,
 
 static int scan_start(const bool active)
 {
+    LOG_INF("NordicNUSDriver::scan_start");
 
     static const uint16_t BT_SCAN_INTERVAL = BT_GAP_SCAN_FAST_INTERVAL;
     static const uint16_t BT_SCAN_WINDOW   = BT_GAP_SCAN_FAST_WINDOW;
@@ -218,6 +220,8 @@ static int scan_init(void)
 	struct bt_scan_init_param scan_init = {
 		.connect_if_match = 1,
 	};
+
+    LOG_INF("NordicNUSDriver::scan_init");
 
 	bt_scan_init(&scan_init);
 	bt_scan_cb_register(&scan_cb);
@@ -253,6 +257,7 @@ static int scan_init(void)
 static void gatt_discover(const int id)
 {
 	int err;
+    LOG_INF("NordicNUSDriver::gatt_discover");
 
     if ((id < 0) || (id >= MaxConnections))
     {
@@ -260,8 +265,7 @@ static void gatt_discover(const int id)
         return;
     }
 
-    LOG_INF("Running NUS discovery for %s",
-        id == PCConnection ? "PC" : names[id]);
+    LOG_INF("Running NUS discovery for %s", names[id]);
 	err = bt_gatt_dm_start(
         connections[id],
 		BT_UUID_NUS_SERVICE,
@@ -288,21 +292,14 @@ static void connected(
     char addr[BT_ADDR_LE_STR_LEN];
     int err;
 
+    LOG_INF("NordicNUSDriver::connected");
+
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	if (conn_err) {
 		LOG_INF("Failed to connect to %s (%d)", addr, conn_err);
 		bt_conn_unref(conn);
 		return;
 	}
-
-    #ifdef CONFIG_ROLE_HUB
-    // Stop scanning while we handle this connection.
-	// err = bt_scan_stop();
-    err = scan_start(false);
-	if ((!err) && (err != -EALREADY)) {
-		LOG_ERR("Stop LE scan failed (err %d)", err);
-	}
-    #endif
 
     const char * name = (conn == scan_conn) ? scan_name : "Unknown";
     // if (conn == scan_conn) bt_conn_unref(scan_conn);
@@ -368,6 +365,7 @@ static void disconnected(
     char addr[BT_ADDR_LE_STR_LEN];
 	int err;
 
+    LOG_INF("NordicNUSDriver::disconnected");
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
     // Determine which slot is being disconnected.
@@ -395,7 +393,7 @@ static void disconnected(
         LOG_WRN("Disconnecting from unknown device at %s (reason: %x)",
             addr, reason);
     }
-    bt_conn_unref(conn);
+    // bt_conn_unref(conn);
 
     #ifdef CONFIG_ROLE_HUB
     // Restart scanning if necessary.
@@ -410,6 +408,7 @@ static void security_changed(
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 
+    LOG_INF("NordicNUSDriver::security_changed");
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	if (!err) {
@@ -429,6 +428,7 @@ static void auth_cancel(struct bt_conn *conn)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 
+    LOG_INF("NordicNUSDriver::auth_cancel");
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	LOG_INF("Pairing cancelled: %s", addr);
@@ -439,6 +439,7 @@ static void pairing_complete(struct bt_conn *conn, bool bonded)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 
+    LOG_INF("NordicNUSDriver::pairing_complete");
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	LOG_INF("Pairing completed: %s, bonded: %d", addr, bonded);
@@ -449,6 +450,7 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 
+    LOG_INF("NordicNUSDriver::pairing_failed");
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	LOG_WRN("Pairing failed conn: %s, reason %d", addr, reason);
@@ -475,6 +477,7 @@ static uint8_t bt_nus_pc_received(
     // int err;
     char addr[BT_ADDR_LE_STR_LEN] = {0};
 
+    LOG_INF("NordicNUSDriver::bt_nus_pc_received");
     bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
 
     LOG_INF("Received %d bytes from PC %s. Ignoring.", len, addr);
@@ -490,6 +493,7 @@ static uint8_t bt_nus_sensor_received(
     // int err;
     char addr[BT_ADDR_LE_STR_LEN] = {0};
 
+    LOG_INF("NordicNUSDriver::bt_nus_sensor_received");
     bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
     const uint8_t slot = slot_from_conn(nus->conn);
     const char * name = "Unknown";
@@ -507,6 +511,7 @@ static int nus_client_init(void)
 {
 	int err;
 
+    LOG_INF("NordicNUSDriver::nus_client_init");
     struct bt_nus_client_init_param pc_init = {
 		.cb = {
 			.received = bt_nus_pc_received

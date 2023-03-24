@@ -35,6 +35,18 @@ extern "C" void BLE_Zephyr_callback(
             data[7] == 0x02 &&
             data[8] == 0x15)
         {
+            uint16_t major = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[25]));
+            uint16_t minor = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[27]));
+            int8_t pwr = *reinterpret_cast<const int8_t *>(&data[29]);
+
+            BLE_Zephyr::reference->add_detection(
+                Clock::get_usec<uint32_t>(),
+                &data[9],
+                major,
+                minor,
+                pwr,
+                rssi);
+
             bt_uuid_128 uuid;
             char uuid_str[BT_UUID_STR_LEN];
             sys_mem_swap(&data[9], 16);
@@ -47,21 +59,9 @@ extern "C" void BLE_Zephyr_callback(
                 uuid_str, BT_UUID_STR_LEN);
             uuid_str[BT_UUID_STR_LEN-1] = 0;
 
-            uint16_t major = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[25]));
-            uint16_t minor = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[27]));
-            int8_t pwr = *reinterpret_cast<const int8_t *>(&data[29]);
-
-            LOG_INF("iBeacon found: sz: %d; uuid: %s; major: %d (0x%x); minor: %d (0x%x); pwr: %d; rssi: %d",
+            LOG_DBG("iBeacon found: sz: %d; uuid: %s; major: %d (0x%x); minor: %d (0x%x); pwr: %d; rssi: %d",
                 ad->len, uuid_str, major, major, minor, minor, pwr, rssi);
             LOG_HEXDUMP_DBG(ad->data, ad->len, "Data:");
-
-            BLE_Zephyr::reference->add_detection(
-                Clock::get_usec<uint32_t>(),
-                uuid.val,
-                major,
-                minor,
-                pwr,
-                rssi);
         }
     }
 }
