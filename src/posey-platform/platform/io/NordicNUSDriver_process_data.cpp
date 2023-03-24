@@ -37,7 +37,7 @@ static off_t flash_offset = 0;
 
 static bool logging_enabled = false;
 
-static void read_conn_rssi(uint16_t handle, int8_t *rssi)
+static void read_handle_rssi(uint16_t handle, int8_t *rssi)
 {
 	struct net_buf *buf, *rsp = NULL;
 	struct bt_hci_cp_read_rssi *cp;
@@ -68,6 +68,15 @@ static void read_conn_rssi(uint16_t handle, int8_t *rssi)
 	net_buf_unref(rsp);
 }
 
+extern "C" int8_t read_conn_rssi(struct bt_conn * conn)
+{
+    static uint16_t conn_handle;
+    int8_t rssi = 0;
+    bt_hci_get_conn_handle(conn, &conn_handle);
+    read_handle_rssi(conn_handle, &rssi);
+    return rssi;
+}
+
 int write_flash(const uint8_t * const data, const uint16_t size)
 {
     int rc = flash_write(flash_dev, flash_offset, data, size);
@@ -91,9 +100,7 @@ extern "C" void process_data(
 
     if (conn != NULL)
     {
-        static uint16_t conn_handle;
-        bt_hci_get_conn_handle(conn, &conn_handle);
-        read_conn_rssi(conn_handle, &rssi);
+        rssi = read_conn_rssi(conn);
     }
 
     // Write block header.

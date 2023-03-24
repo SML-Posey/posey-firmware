@@ -1,17 +1,21 @@
 #include "platform.hpp"
 
 #include <zephyr/types.h>
+#include <zephyr/sys/byteorder.h>
 #include <stddef.h>
 #include <zephyr/bluetooth/bluetooth.h>
 #include <zephyr/bluetooth/hci.h>
 
+#include <zephyr/logging/log.h>
+
 #include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
+#include "posey-platform/platform/io/NordicNUSDriver.h"
 
 LOG_MODULE_REGISTER(BLE_Zephyr);
 
 BLE_Zephyr * BLE_Zephyr::reference = nullptr;
 
-static void BLE_Zephyr_callback(
+extern "C" void BLE_Zephyr_callback(
 	const bt_addr_le_t *addr,
 	int8_t rssi,
 	uint8_t type,
@@ -20,10 +24,45 @@ static void BLE_Zephyr_callback(
     // ATW: TODO: Change to iBeacon detection.
     if (BLE_Zephyr::reference)
     {
-        BLE_Zephyr::reference->add_detection(
-            Clock::get_usec<uint32_t>(),
-            addr->a.val,
-            rssi);
+        uint8_t * data = ad->data;
+
+        // Determine if it's an iBeacon or not.
+        if (
+            ad->len == 30 &&
+            data[4] == 0xff &&
+            data[5] == 0x4c &&
+            data[6] == 0x00 &&
+            data[7] == 0x02 &&
+            data[8] == 0x15)
+        {
+            bt_uuid_128 uuid;
+            char uuid_str[BT_UUID_STR_LEN];
+            sys_mem_swap(&data[9], 16);
+            bt_uuid_create(
+                reinterpret_cast<bt_uuid *>(&uuid),
+                &data[9],
+                16);
+            bt_uuid_to_str(
+                reinterpret_cast<const bt_uuid *>(&uuid),
+                uuid_str, BT_UUID_STR_LEN);
+            uuid_str[BT_UUID_STR_LEN-1] = 0;
+
+            uint16_t major = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[25]));
+            uint16_t minor = sys_le16_to_cpu(*reinterpret_cast<const uint16_t *>(&data[27]));
+            int8_t pwr = *reinterpret_cast<const int8_t *>(&data[29]);
+
+            LOG_INF("iBeacon found: sz: %d; uuid: %s; major: %d (0x%x); minor: %d (0x%x); pwr: %d; rssi: %d",
+                ad->len, uuid_str, major, major, minor, minor, pwr, rssi);
+            LOG_HEXDUMP_DBG(ad->data, ad->len, "Data:");
+
+            BLE_Zephyr::reference->add_detection(
+                Clock::get_usec<uint32_t>(),
+                uuid.val,
+                major,
+                minor,
+                pwr,
+                rssi);
+        }
     }
 }
 
@@ -38,28 +77,8 @@ bool BLE_Zephyr::setup()
     {
         reference = this;
 
-        // static const uint16_t BT_PERIOD_1000ms = 0x0650;
-        // static const uint16_t BT_PERIOD_100ms  = 0x00a0;
-
-        // static const uint16_t BT_SCAN_INTERVAL = BT_PERIOD_1000ms;
-        // static const uint16_t BT_SCAN_WINDOW   = BT_PERIOD_100ms;
-
-        static const uint16_t BT_SCAN_INTERVAL = BT_GAP_SCAN_FAST_INTERVAL;
-        static const uint16_t BT_SCAN_WINDOW   = BT_GAP_SCAN_FAST_WINDOW;
-
-        struct bt_le_scan_param scan_param = {
-            .type       = BT_LE_SCAN_TYPE_PASSIVE,
-            .options    = BT_LE_SCAN_OPT_FILTER_DUPLICATE,
-            .interval   = BT_SCAN_INTERVAL,
-            .window     = BT_SCAN_WINDOW,
-        };
-
-        int err = bt_le_scan_start(&scan_param, BLE_Zephyr_callback);
-        if (err)
-        {
-            LOG_ERR("BLE scanning could not start. (err %d)", err);
-            return false;
-        }
+        // ATW: The scanning was moved to Nordic NUS driver. This is
+        // yucky code in dire need of a makeover.
 
         return true;
     }

@@ -153,12 +153,22 @@ static void scan_filter_match(
     bool connectable)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
+    bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
 
-    scan_name = filter_match->name.name;
-	bt_addr_le_to_str(device_info->recv_info->addr, addr, sizeof(addr));
+    // Matching a device by name?
+    if (filter_match->name.match)
+    {
+        scan_name = filter_match->name.name;
 
-	LOG_INF("Filters matched. Name: %s (slot %d) Address: %s connectable: %d",
-		scan_name, slot_from_name(scan_name), addr, connectable);
+        LOG_INF("Filters matched. Name: %s (slot %d) Address: %s connectable: %d",
+            scan_name, slot_from_name(scan_name), addr, connectable);
+    }
+
+    // Why did we match?
+    else
+    {
+        LOG_WRN("Not sure why we matched address %s", addr);
+    }
 }
 
 static void scan_connecting_error(struct bt_scan_device_info *device_info)
@@ -179,6 +189,28 @@ BT_SCAN_CB_INIT(scan_cb,
     NULL, // nomatch
 	scan_connecting_error,
     scan_connecting);
+
+static int scan_start(const bool active)
+{
+
+    static const uint16_t BT_SCAN_INTERVAL = BT_GAP_SCAN_FAST_INTERVAL;
+    static const uint16_t BT_SCAN_WINDOW   = BT_GAP_SCAN_FAST_WINDOW;
+
+    struct bt_le_scan_param scan_param = {
+        .type       = active ? BT_LE_SCAN_TYPE_ACTIVE : BT_LE_SCAN_TYPE_PASSIVE,
+        .options    = BT_LE_SCAN_OPT_FILTER_DUPLICATE,
+        .interval   = BT_SCAN_INTERVAL,
+        .window     = BT_SCAN_WINDOW,
+    };
+
+    int err = bt_le_scan_start(&scan_param, BLE_Zephyr_callback);
+    if (err)
+    {
+        LOG_ERR("BLE scanning could not start. (err %d)", err);
+    }
+
+    return err;
+}
 
 static int scan_init(void)
 {
@@ -204,7 +236,7 @@ static int scan_init(void)
 	
 	err = bt_scan_filter_enable(BT_SCAN_NAME_FILTER, false);
     if (err){
-        LOG_ERR("Filters cannot be turned on (err %d)", err);
+        LOG_ERR("Device name filters cannot be turned on (err %d)", err);
         return err;
     }
 
@@ -265,7 +297,8 @@ static void connected(
 
     #ifdef CONFIG_ROLE_HUB
     // Stop scanning while we handle this connection.
-	err = bt_scan_stop();
+	// err = bt_scan_stop();
+    err = scan_start(false);
 	if ((!err) && (err != -EALREADY)) {
 		LOG_ERR("Stop LE scan failed (err %d)", err);
 	}
@@ -323,12 +356,6 @@ static void connected(
     #ifdef CONFIG_ROLE_HUB
     // Restart scanning if necessary.
     LOG_INF("%d of %d sensors connected.", sensor_connections, MaxSensors);
-    if (sensor_connections < MaxSensors)
-    {
-        LOG_INF("Restarting scanning.");
-		err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-        if ((err) && (err != -EALREADY)) LOG_ERR("Scanning failed to start (err %d)", err);
-    }
     #endif
 
     // bt_conn_unref(conn);
@@ -373,12 +400,6 @@ static void disconnected(
     #ifdef CONFIG_ROLE_HUB
     // Restart scanning if necessary.
     LOG_INF("%d of %d sensors connected.", sensor_connections, MaxSensors);
-    if (sensor_connections < MaxSensors)
-    {
-        LOG_INF("Restarting scanning.");
-		err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-        if ((err) && (err != -EALREADY)) LOG_ERR("Scanning failed to start (err %d)", err);
-    }
     #endif
 }
 
@@ -582,7 +603,8 @@ int init_nus()
     }
 
     #ifdef CONFIG_ROLE_HUB
-	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+	// err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+    err = scan_start(false);
 	if (err) {
 		LOG_ERR("Scanning failed to start (err %d)", err);
 		return err;

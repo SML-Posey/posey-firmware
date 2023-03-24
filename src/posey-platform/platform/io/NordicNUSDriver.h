@@ -10,6 +10,8 @@ extern "C" {
 int init_nus();
 
 #ifdef CONFIG_ROLE_HUB
+int8_t read_conn_rssi(struct bt_conn * conn);
+
 bool init_flash();
 bool erase_flash(const uint32_t size);
 bool erase_used_flash();
@@ -26,6 +28,12 @@ void process_data(
     const uint8_t slot,
     const uint8_t * data,
     const uint16_t size);
+
+void BLE_Zephyr_callback(
+	const bt_addr_le_t *addr,
+	int8_t rssi,
+	uint8_t type,
+	struct net_buf_simple *ad);
 #endif
 
 #ifdef __cplusplus
