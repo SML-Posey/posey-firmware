@@ -56,6 +56,18 @@ static bool read_device_config_param(
     return rc > 0;
 }
 
+void refresh_device_config()
+{
+    if (!read_device_config_param("data_dt", 6, device_config.data_dt))
+        config_update_data_dt("2023-02-10 13:42 EST");
+    if (!read_device_config_param("data_end", 7, device_config.data_end))
+        config_update_data_end(0);
+    if (!read_device_config_param("data_start_ms", 8, device_config.data_start_ms))
+        config_update_data_start_ms(0);
+    if (!read_device_config_param("data_end_ms", 9, device_config.data_end_ms))
+        config_update_data_end_ms(0);
+}
+
 static bool read_device_config()
 {
     int rc;
@@ -89,14 +101,7 @@ static bool read_device_config()
     okay &= read_device_config_param("sw", 4, device_config.sw);
     okay &= read_device_config_param("datetime", 5, device_config.dt);
     
-    if (!read_device_config_param("data_dt", 6, device_config.data_dt))
-        config_update_data_dt("2023-02-10 13:42 EST");
-    if (!read_device_config_param("data_end", 7, device_config.data_end))
-        config_update_data_end(0);
-    if (!read_device_config_param("data_start_ms", 8, device_config.data_start_ms))
-        config_update_data_start_ms(0);
-    if (!read_device_config_param("data_end_ms", 9, device_config.data_end_ms))
-        config_update_data_end_ms(0);
+    refresh_device_config();
 
     return okay;
 }

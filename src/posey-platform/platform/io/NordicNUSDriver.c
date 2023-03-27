@@ -28,7 +28,7 @@
 #include "platform/config.h"
 
 #define LOG_MODULE_NAME posey_nus
-LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_DBG);
+LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_INF);
 
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN	(sizeof(DEVICE_NAME) - 1)
@@ -67,7 +67,7 @@ static struct bt_conn * connections[MaxConnections] = {
 };
 #endif
 
-static struct bt_nus_client nus_clients[MaxConnections];
+static struct bt_nus_client nus_clients[MaxSensors];
 
 static const char * scan_name = NULL;
 static struct bt_conn * scan_conn = NULL;
@@ -259,7 +259,7 @@ static void gatt_discover(const int id)
 	int err;
     LOG_INF("NordicNUSDriver::gatt_discover");
 
-    if ((id < 0) || (id >= MaxConnections))
+    if ((id < 0) || (id >= MaxSensors))
     {
         LOG_WRN("Invalid slot ID (%d), skipping gatt discovery.", id);
         return;
@@ -348,7 +348,8 @@ static void connected(
 	if (err) {
 		LOG_WRN("Failed to set security: %d", err);
 	}
-    gatt_discover(slot);
+
+    if (slot < MaxSensors) gatt_discover(slot);
     
     #ifdef CONFIG_ROLE_HUB
     // Restart scanning if necessary.
@@ -469,22 +470,6 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 ****      NUS
 ****/
 
-static uint8_t bt_nus_pc_received(
-    struct bt_nus_client *nus,
-	const uint8_t *data,
-    uint16_t len)
-{
-    // int err;
-    char addr[BT_ADDR_LE_STR_LEN] = {0};
-
-    LOG_INF("NordicNUSDriver::bt_nus_pc_received");
-    bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
-
-    LOG_INF("Received %d bytes from PC %s. Ignoring.", len, addr);
-
-    return BT_GATT_ITER_CONTINUE;
-}
-
 static uint8_t bt_nus_sensor_received(
     struct bt_nus_client *nus,
 	const uint8_t *data,
@@ -493,48 +478,58 @@ static uint8_t bt_nus_sensor_received(
     // int err;
     char addr[BT_ADDR_LE_STR_LEN] = {0};
 
-    LOG_INF("NordicNUSDriver::bt_nus_sensor_received");
     bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
     const uint8_t slot = slot_from_conn(nus->conn);
     const char * name = "Unknown";
     if (slot < MaxSensors)
         name = names[slot];
 
-    LOG_INF("Received %d bytes from SENSOR %s (slot %d, addr %s).",
+    LOG_DBG("Received %d bytes from SENSOR %s (slot %d, addr %s).",
         len, name, slot, addr);
+
+    #if defined(CONFIG_ROLE_HUB)
     process_data(nus->conn, slot, data, len);
+    #endif
 
     return BT_GATT_ITER_CONTINUE;
 }
 
 static int nus_client_init(void)
 {
-	int err;
+	int err = 0;
 
     LOG_INF("NordicNUSDriver::nus_client_init");
-    struct bt_nus_client_init_param pc_init = {
-		.cb = {
-			.received = bt_nus_pc_received
-		}
-	};
 	struct bt_nus_client_init_param sensor_init = {
 		.cb = {
 			.received = bt_nus_sensor_received
 		}
 	};
 
-    for (int i = 0; i < MaxConnections; ++i)
+    // Only the sensors need NUS clients. The PC communication will not find
+    // a NUS GATT service.
+    for (int i = 0; i < MaxSensors; ++i)
     {
-        err = bt_nus_client_init(
-            &nus_clients[i],
-            i == PCConnection ? &pc_init : &sensor_init);
+        err = bt_nus_client_init(&nus_clients[i], &sensor_init);
         if (err) {
-            LOG_ERR("NUS Client initialization failed for %s (slot %d, err %d)",
-                i == PCConnection ? "PC" : "SENSOR",
+            LOG_ERR("NUS Client initialization failed for sensor (slot %d, err %d)",
                 i, err);
             return err;
         }
     }
+
+    #if defined(CONFIG_ROLE_HUB)
+    // Initialize a general callback for PC connections. This is only needed for
+    // the hub units which can accept data input. The peripheral sensors can
+    // just ignore it.
+    struct bt_nus_cb nus_cb = {
+        .received = bt_nus_pc_received
+    };
+	err = bt_nus_init(&nus_cb);
+	if (err) {
+		LOG_ERR("bt_nus_init: Failed to initialize UART service (err: %d)", err);
+		return err;
+	}
+    #endif
 
 	LOG_INF("NUS Clients module initialized");
 	return err;
@@ -544,13 +539,16 @@ int init_nus()
 {
     int err = 0;
 
-    LOG_INF("Initializing Flash, BLE, and NUS...");
-
+    #if defined(CONFIG_ROLE_HUB)
+    LOG_INF("Initializing Flash...");
     if (!init_flash())
     {
         LOG_ERR("Cannot initialize BLE w/o flash!");
         return -1;
     }
+    #endif
+
+    LOG_INF("Initializing BLE and NUS...");
 
 	err = bt_conn_auth_cb_register(&conn_auth_callbacks);
 	if (err) {

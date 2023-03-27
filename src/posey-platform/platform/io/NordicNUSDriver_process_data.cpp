@@ -37,6 +37,21 @@ static off_t flash_offset = 0;
 
 static bool logging_enabled = false;
 
+extern "C" void bt_nus_pc_received(
+	struct bt_conn *conn,
+	const uint8_t *data,
+    uint16_t len)
+{
+    // int err;
+    char addr[BT_ADDR_LE_STR_LEN] = {0};
+
+    LOG_INF("NordicNUSDriver::bt_nus_pc_received");
+    bt_addr_le_to_str(bt_conn_get_dst(conn), addr, ARRAY_SIZE(addr));
+
+    auto written = reader.write_from(data, len);
+	LOG_INF("Received %d of %d bytes from PC %s.", written, len, addr);
+}
+
 static void read_handle_rssi(uint16_t handle, int8_t *rssi)
 {
 	struct net_buf *buf, *rsp = NULL;
@@ -81,7 +96,7 @@ int write_flash(const uint8_t * const data, const uint16_t size)
 {
     int rc = flash_write(flash_dev, flash_offset, data, size);
     if (rc != 0) LOG_ERR("FAILED to write %d bytes at offset %ld", size, flash_offset);
-    else LOG_INF("Wrote %d bytes at offset %ld", size, flash_offset);
+    else LOG_DBG("Wrote %d bytes at offset %ld", size, flash_offset);
 
     flash_offset += size;
     return rc;
@@ -95,8 +110,12 @@ extern "C" void process_data(
 {
     static BaseFlashBlock header;
     static int8_t rssi = 0;
+    static int iter = 0;
 
     if (!logging_enabled) return;
+
+    if ((++iter % 1000) == 0)
+        LOG_INF("Recording in progress: %d", flash_log_size());
 
     if (conn != NULL)
     {
@@ -132,6 +151,8 @@ extern "C" bool erase_flash(const uint32_t erase_size)
 		LOG_INF("Flash erase succeeded!\n");
         return true;
 	}
+
+    flash_offset = 0;
 }
 
 extern "C" bool erase_used_flash()

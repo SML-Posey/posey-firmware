@@ -34,6 +34,11 @@ void BLE_Zephyr_callback(
 	int8_t rssi,
 	uint8_t type,
 	struct net_buf_simple *ad);
+
+void bt_nus_pc_received(
+	struct bt_conn *conn,
+	const uint8_t *data,
+    uint16_t len);
 #endif
 
 #ifdef __cplusplus
