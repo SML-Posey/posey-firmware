@@ -14,3 +14,15 @@ choice
     config ROLE_UNDEFINED
         bool "Undefined role"
 endchoice
+
+choice
+    prompt "Set target flash size."
+    default FLASH_SIZE_NONE
+
+    config FLASH_SIZE_128Mbit
+         bool "128Mbit (16MB) flash"
+    config FLASH_SIZE_1Gbit
+         bool "1Gbit (128MB) flash"
+    config FLASH_SIZE_NONE
+         bool "No flash"
+endchoice

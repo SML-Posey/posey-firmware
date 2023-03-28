@@ -23,6 +23,11 @@ void stop_flash_logging();
 
 uint32_t flash_log_size();
 
+uint16_t read_flash(
+    const uint32_t offset,
+    uint8_t * data,
+    uint16_t size);
+
 void process_data(
     struct bt_conn * conn,
     const uint8_t slot,
@@ -39,6 +44,8 @@ void bt_nus_pc_received(
 	struct bt_conn *conn,
 	const uint8_t *data,
     uint16_t len);
+
+struct bt_conn * get_pc_connection();
 #endif
 
 #ifdef __cplusplus

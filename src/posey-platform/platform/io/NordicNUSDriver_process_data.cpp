@@ -27,10 +27,18 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 #define K 1024
 #define M (K*K)
+#define G (M*K)
 
 #define FLASH_SECTOR_SIZE (4*K)         // KBytes
 #define FLASH_BLOCK_SIZE (64*K)         // KBytes
-#define FLASH_SIZE (128*M/8)            // MBytes
+
+#if defined(CONFIG_FLASH_SIZE_128Mbit)
+#define FLASH_SIZE (128*M/8)
+#elif defined(CONFIG_FLASH_SIZE_1Gbit)
+#define FLASH_SIZE (1*G/8)
+#else
+#define FLASH_SIZE (0)
+#endif
 
 const struct device * flash_dev = NULL;
 static off_t flash_offset = 0;
@@ -92,14 +100,50 @@ extern "C" int8_t read_conn_rssi(struct bt_conn * conn)
     return rssi;
 }
 
-int write_flash(const uint8_t * const data, const uint16_t size)
+int write_flash(const uint8_t * const data, uint16_t size)
 {
+    if (!flash_is_logging()) return 0;
+
+    off_t remaining = FLASH_SIZE - flash_offset;
+    if (remaining < size) size = remaining;
     int rc = flash_write(flash_dev, flash_offset, data, size);
     if (rc != 0) LOG_ERR("FAILED to write %d bytes at offset %ld", size, flash_offset);
     else LOG_DBG("Wrote %d bytes at offset %ld", size, flash_offset);
 
     flash_offset += size;
+
+    if (remaining <= size)
+    {
+        LOG_WRN("Flash capacity reached. Disabling logging.");
+        stop_flash_logging();
+    }
+
     return rc;
+}
+
+extern "C" uint16_t read_flash(
+    const uint32_t offset,
+    uint8_t * data,
+    uint16_t size)
+{
+    uint32_t data_size = flash_log_size();
+    if (offset >= data_size)
+    {
+        LOG_WRN("Trying to read from offset %d, past data end.", offset);
+        return 0;
+    }
+
+    uint32_t end_offset = offset + size;
+    if (end_offset > data_size)
+    {
+        size -= (end_offset - data_size);
+        LOG_WRN("Trying to read past offset %d to %d, decreasing read size to %d",
+            data_size, end_offset, size);
+    }
+    int rc = flash_read(flash_dev, offset, data, size);
+    if (rc != 0) LOG_ERR("FAILED to read %d bytes at offset %d", size, offset);
+
+    return size;
 }
 
 extern "C" void process_data(
@@ -115,7 +159,13 @@ extern "C" void process_data(
     if (!logging_enabled) return;
 
     if ((++iter % 1000) == 0)
-        LOG_INF("Recording in progress: %d", flash_log_size());
+    {
+        static float flash_size = FLASH_SIZE*1.0;
+        float used = flash_log_size()/1024.0/1024.0;
+        float pct = 100.0*used/flash_size;
+        LOG_INF("Recording in progress: %.2f of %.2f MB (%.2f%%)",
+            used, flash_size, pct);
+    }
 
     if (conn != NULL)
     {

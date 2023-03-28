@@ -102,6 +102,11 @@ static int slot_from_name(const char * const name)
     return PCConnection;
 }
 
+struct bt_conn * get_pc_connection()
+{
+    return connections[PCConnection];
+}
+
 /***
 ****      GATT NUS service discovery.
 ****/
@@ -419,9 +424,35 @@ static void security_changed(
     }
 }
 
+static bool le_param_req(
+    struct bt_conn *conn,
+    struct bt_le_conn_param *param)
+{
+	LOG_INF("Connection parameters update request received.");
+	LOG_INF("  - Connection interval: [%d, %d]",
+	       param->interval_min, param->interval_max);
+	LOG_INF("  - Latency: %d", param->latency);
+    LOG_INF("  - Timeout: %d", param->timeout);
+
+	return true;
+}
+
+static void le_param_updated(
+    struct bt_conn *conn,
+    uint16_t interval,
+	uint16_t latency,
+    uint16_t timeout)
+{
+	LOG_INF("Connection parameters updated:");
+    LOG_INF("  - Interval: %d; Latency: %d; Timeout: %d",
+	       interval, latency, timeout);
+}
+
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = connected,
 	.disconnected = disconnected,
+	.le_param_req = le_param_req,
+	.le_param_updated = le_param_updated,
 	.security_changed = security_changed
 };
 
