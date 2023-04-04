@@ -168,9 +168,8 @@ extern "C" void process_data(
     }
 
     if (conn != NULL)
-    {
         rssi = read_conn_rssi(conn);
-    }
+    else rssi = 0;
 
     // Write block header.
     header.data.slot = slot;

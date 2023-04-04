@@ -81,10 +81,10 @@ static const struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL),
 };
 
-static int slot_from_conn(struct bt_conn * const conn)
+static uint8_t slot_from_conn(struct bt_conn * const conn)
 {
     if (conn == NULL)
-        return -1;
+        return 0x64; // 100
 
     for (int i = 0; i < MaxConnections; ++i)
     {

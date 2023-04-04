@@ -12,7 +12,7 @@ bool IMU_Stub::setup()
 
 bool IMU_Stub::collect()
 {
-    data.time = Clock::get_usec<uint32_t>();
+    data.time_ms = Clock::get_msec<uint32_t>();
 
     data.Ax = 1;
     data.Ay = 2;
@@ -27,7 +27,7 @@ bool IMU_Stub::collect()
     data.Qi = 1112;
     data.Qj = 1113;
     data.Qk = 1114;
-    data.Qacc = 1115;
+    // data.Qacc = 1115;
 
     return true;
 }

@@ -15,9 +15,10 @@ class NordicFlashWriter : public BaseMessageWriter
 
         uint16_t write(
             const uint8_t * src_buffer,
-            const uint16_t src_size) override
+            const uint16_t src_size,
+            const bool immediate = false) override
         {
-            LOG_INF("Write %d bytes to flash from slot %d (RSSI: %d)",
+            LOG_DBG("Write %d bytes to flash from slot %d (RSSI: %d)",
                 src_size, block.data.slot, block.data.rssi);
             return src_size;
         }
@@ -30,7 +31,7 @@ class NordicFlashWriter : public BaseMessageWriter
             uint16_t written = 0;
 
             // Write header.
-            block.data.time = Clock::get_usec<uint32_t>();
+            block.data.time_ms = Clock::get_msec<uint32_t>();
             block.data.rssi = rssi;
             block.data.block_bytes = src_size;
             written += block.write_telemetry(*this);
