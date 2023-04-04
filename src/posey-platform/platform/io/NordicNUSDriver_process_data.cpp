@@ -173,7 +173,7 @@ extern "C" void process_data(
 
     // Write block header.
     header.data.slot = slot;
-    header.data.time = Clock::get_usec<uint32_t>();
+    header.data.time_ms = Clock::get_msec<uint32_t>();
     header.data.rssi = rssi;
     header.data.block_bytes = size;
     header.data.serialize(header.buffer);
