@@ -160,7 +160,7 @@ extern "C" void process_data(
 
     if ((++iter % 1000) == 0)
     {
-        static float flash_size = FLASH_SIZE*1.0;
+        static float flash_size = FLASH_SIZE/1024.0/1024.0;
         float used = flash_log_size()/1024.0/1024.0;
         float pct = 100.0*used/flash_size;
         LOG_INF("Recording in progress: %.2f of %.2f MB (%.2f%%)",
@@ -170,6 +170,18 @@ extern "C" void process_data(
     if (conn != NULL)
         rssi = read_conn_rssi(conn);
     else rssi = 0;
+
+    const bt_addr_le_t * addr = bt_conn_get_dst(conn);
+    if (addr != NULL)
+    {
+        for (int i = 0; i < 6; i++)
+            header.data.mac[i] = addr->a.val[i];
+    }
+    else
+    {
+        for (int i = 0; i < 6; i++)
+            header.data.mac[i] = 0;
+    }
 
     // Write block header.
     header.data.slot = slot;
@@ -192,6 +204,7 @@ extern "C" bool erase_flash(const uint32_t erase_size)
         LOG_INF("Starting flash erase ~ %.2f MB", erase_size/1024.0/1024.0);
     }
     
+    flash_offset = 0;
     int rc = flash_erase(flash_dev, 0, static_cast<off_t>(erase_size));
 	if (rc != 0) {
 		LOG_ERR("Flash erase failed! err=%d\n", rc);
@@ -200,8 +213,6 @@ extern "C" bool erase_flash(const uint32_t erase_size)
 		LOG_INF("Flash erase succeeded!\n");
         return true;
 	}
-
-    flash_offset = 0;
 }
 
 extern "C" bool erase_used_flash()

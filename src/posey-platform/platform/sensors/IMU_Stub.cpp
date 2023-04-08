@@ -14,7 +14,9 @@ bool IMU_Stub::collect()
 {
     data.time_ms = Clock::get_msec<uint32_t>();
 
-    data.Ax = 1;
+    static float Ax = 0;
+    Ax += 1.0;
+    data.Ax = Ax;
     data.Ay = 2;
     data.Az = 3;
     // data.Gx = 11;

@@ -16,12 +16,13 @@ int main()
 {
     #if defined(CONFIG_ROLE_HUB)
     TaskWaist task(imu, ble, reader, writer);
+    RateTask rtmain(task, 50);
     #elif defined(CONFIG_ROLE_WATCH)
     TaskWatch task(imu, writer);
+    RateTask rtmain(task, 50);
     #elif defined(CONFIG_ROLE_RING)
     TaskRing task();
     #endif
-    RateTask rtmain(task, 50);
 
     if (!init_platform()) die("Platform init failed.");
 
