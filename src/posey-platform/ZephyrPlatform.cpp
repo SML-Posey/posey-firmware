@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 
 #include "platform/io/NordicNUSDriver.h"
+#include "platform/io/NordicSAADACDriver.h"
 #include "platform/config.h"
 
 #define LOG_MODULE_NAME posey_platform
@@ -109,7 +110,7 @@ static bool read_device_config()
 void config_update_data_dt(const char * dt)
 {
     LOG_INF("Setting new data date/time: %s", dt);
-	nvs_write(&fs, 6, dt, strlen(dt)+1);
+	nvs_write(&fs, 6, dt, strlen(dt));
 }
 
 void config_update_data_end(const uint32_t offset)
@@ -137,6 +138,13 @@ bool init_platform()
         LOG_ERR("Unable to read device configuration!");
         return false;
     }
+
+    if (!init_adc())
+    {
+        LOG_ERR("Unable to initialize ADC!");
+        return false;
+    }
+
     if (init_nus() != 0)
     {
         LOG_ERR("Unable to initialize BLE and NUS!");

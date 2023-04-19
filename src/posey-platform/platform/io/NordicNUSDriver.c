@@ -42,7 +42,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_INF);
 #define MaxConnections (MaxSensors + 1)
 #define PCConnection (MaxConnections - 1)
 
-static char * names[MaxConnections] = {
+static const char * names[MaxConnections] = {
     "Posey w8 Thistle",
     "Posey w8 Flox",
     "Posey r2 Tulip",
@@ -96,26 +96,9 @@ static int num_connected_sensors()
     return sensor_connections;
 }
 
-#define INTERVAL_MIN 0x4 /* 320 units, 400 ms */
-#define INTERVAL_MAX 0x4 /* 320 units, 400 ms */
-#define CONN_LATENCY 0
-
-#define MIN_CONN_INTERVAL 6
-#define MAX_CONN_INTERVAL 3200
-#define SUPERVISION_TIMEOUT 1000
-
+#if defined(CONFIG_ROLE_HUB)
 static struct bt_gatt_exchange_params mtu_exchange_params;
-
-static struct test_params
-{
-    struct bt_le_conn_param *conn_param;
-    struct bt_conn_le_phy_param *phy;
-    struct bt_conn_le_data_len_param *data_len;
-} test_params = {
-    .conn_param = BT_LE_CONN_PARAM(INTERVAL_MIN, INTERVAL_MAX, CONN_LATENCY,
-                                   SUPERVISION_TIMEOUT),
-    .phy = BT_CONN_LE_PHY_PARAM_2M,
-    .data_len = BT_LE_DATA_LEN_PARAM_MAX};
+#endif
 
 static volatile bool data_length_req;
 static const char *phy2str(uint8_t phy)
@@ -135,6 +118,7 @@ static const char *phy2str(uint8_t phy)
     }
 }
 
+#if defined(CONFIG_ROLE_HUB)
 static int print_connection_info(const struct bt_conn *conn)
 {
     struct bt_conn_info info = {0};
@@ -157,8 +141,9 @@ static int print_connection_info(const struct bt_conn *conn)
 }
 
 static struct bt_nus_client nus_clients[MaxSensors];
+#endif
 
-static const char * scan_name = NULL;
+static char scan_name[30];
 static struct bt_conn * scan_conn = NULL;
 
 static struct bt_data ad[2] = {
@@ -196,6 +181,8 @@ struct bt_conn * get_pc_connection()
     return connections[PCConnection];
 }
 
+#if defined(CONFIG_ROLE_HUB)
+
 /***
 ****      GATT NUS service discovery.
 ****/
@@ -223,9 +210,6 @@ static int connection_configuration_set(
 {
     int err = print_connection_info(conn);
     if (err) return err;
-
-    // Define time for negotiation to occur ...
-    #define LINK_UPDATE_TIMEOUT K_SECONDS(5)
 
     err = bt_conn_le_phy_update(conn, phy);
     if (err)
@@ -291,13 +275,44 @@ static int connection_configuration_set(
     return 0;
 }
 
-static int scan_start(const bool active);
+static int scan_start();
+static void scan_stop();
+
+static bool sensors_enabled = true;
+
+void disable_sensors()
+{
+    LOG_WRN("Disabling sensors");
+    sensors_enabled = false;
+
+    // Restart scanning in passive mode.
+    scan_start();
+
+    // Disconnect any connected sensor devices.
+    for (int i = 0; i < MaxSensors; ++i)
+    {
+        if (connections[i] != NULL)
+        {
+            LOG_WRN("Disconnecting sensor %d %s", i, names[i]);
+            bt_conn_disconnect(connections[i], BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+        }
+    }
+}
+
+void enable_sensors()
+{
+    LOG_WRN("Enabling sensors");
+    sensors_enabled = true;
+
+    // Restart scanning in active mode.
+    scan_start();
+}
 
 static void discovery_complete(
     struct bt_gatt_dm *dm,
     void *context)
 {
-	struct bt_nus_client *nus = context;
+	struct bt_nus_client *nus = (struct bt_nus_client *)context;
 	LOG_INF("NUS service discovery completed.");
 
 	bt_gatt_dm_data_print(dm);
@@ -307,18 +322,7 @@ static void discovery_complete(
 
 	bt_gatt_dm_data_release(dm);
 
-    int sensor_connections = num_connected_sensors();
-    int err = scan_start(sensor_connections < MaxSensors);
-	if (err) LOG_ERR("Scanning failed to start (err %d)", err);
-
-    // int err = connection_configuration_set(
-    //     nus->conn,
-    //     test_params.conn_param,
-    //     test_params.phy,
-    //     test_params.data_len);
-    // if (err) {
-    //     LOG_WRN("Error in connection_configuration_set()");
-    // }
+    scan_start();
 }
 
 static void discovery_service_not_found(
@@ -326,11 +330,6 @@ static void discovery_service_not_found(
 	void *context)
 {
 	LOG_INF("NUS service not found.");
-
-    // Restart active scanning if necessary.
-    int sensor_connections = num_connected_sensors();
-    int err = scan_start(sensor_connections < MaxSensors);
-	if (err) LOG_ERR("Scanning failed to start (err %d)", err);
 }
 
 static void discovery_error(
@@ -338,11 +337,7 @@ static void discovery_error(
 	int err,
 	void *context)
 {
-	LOG_WRN("Error while discovering GATT database: (%d)", err);
-
-    int sensor_connections = num_connected_sensors();
-    err = scan_start(sensor_connections < MaxSensors);
-	if (err) LOG_ERR("Scanning failed to start (err %d)", err);
+	LOG_WRN("Error while discovering GATT service: (%d - %s)", err, strerror(err));
 }
 
 struct bt_gatt_dm_cb discovery_cb = {
@@ -351,7 +346,6 @@ struct bt_gatt_dm_cb discovery_cb = {
 	.error_found       = discovery_error,
 };
 
-#ifdef CONFIG_ROLE_HUB
 /***
 ****      Scanning.
 ****/
@@ -368,7 +362,8 @@ static void scan_filter_match(
     // Matching a device by name?
     if (filter_match->name.match)
     {
-        scan_name = filter_match->name.name;
+        memcpy(scan_name, filter_match->name.name, filter_match->name.len);
+        scan_name[filter_match->name.len] = '\0';
 
         LOG_INF("Filters matched. Name: %s (slot %d) Address: %s connectable: %d",
             scan_name, slot_from_name(scan_name), addr, connectable);
@@ -384,10 +379,7 @@ static void scan_filter_match(
 static void scan_connecting_error(struct bt_scan_device_info *device_info)
 {
 	LOG_WRN("Scan connecting failed");
-
-    // int sensor_connections = num_connected_sensors();
-    // int err = scan_start(sensor_connections < MaxSensors);
-	// if (err) LOG_ERR("Scanning failed to start (err %d)", err);
+    scan_start();
 }
 
 static void scan_connecting(
@@ -404,33 +396,82 @@ BT_SCAN_CB_INIT(scan_cb,
 	scan_connecting_error,
     scan_connecting);
 
-static int scan_start(const bool active)
+static int scan_start()
 {
-    LOG_INF("NordicNUSDriver::scan_start %s",
-        active ? "active" : "passive");
+    #if defined(CONFIG_ROLE_HUB)
 
-    static const uint16_t BT_SCAN_INTERVAL = BT_GAP_SCAN_FAST_INTERVAL;
-    static const uint16_t BT_SCAN_WINDOW   = BT_GAP_SCAN_FAST_WINDOW;
+    scan_stop();
 
+    int err;
     struct bt_le_scan_param scan_param = {
-        .type       = active ? BT_LE_SCAN_TYPE_ACTIVE : BT_LE_SCAN_TYPE_PASSIVE,
+        .type       = BT_LE_SCAN_TYPE_PASSIVE,
         .options    = BT_LE_SCAN_OPT_FILTER_DUPLICATE,
-        .interval   = BT_SCAN_INTERVAL,
-        .window     = BT_SCAN_WINDOW,
+        .interval   = BT_GAP_SCAN_FAST_INTERVAL,
+        .window     = BT_GAP_SCAN_FAST_WINDOW,
     };
-    
-    int err = bt_le_scan_start(&scan_param, BLE_Zephyr_callback);
-    if (err)
+
+    int sensors_connected = num_connected_sensors();
+    if ((!sensors_enabled) || (sensors_connected >= MaxSensors))
     {
-        LOG_ERR("BLE scanning could not start. (err %d)", err);
+        LOG_INF("BLE scanning: Connected to %d sensors. Passive scanning.", sensors_connected);
+    }
+    else
+    {
+        LOG_INF("BLE scanning: Connected to %d sensors. Active scanning.", sensors_connected);
+
+        // Add scan filters for the intended devices.
+        for (int i = 0; i < MaxSensors; ++i)
+        {
+            if (connections[i] != NULL)
+                continue;
+            err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_NAME, names[i]);
+            if (err) {
+                LOG_ERR("Filter %d cannot be set for device %s (err %d - %s)",
+                i, names[i], err, strerror(err));
+                return err;
+            }
+        }
+
+        err = bt_scan_filter_enable(BT_SCAN_NAME_FILTER, false);
+        if (err)
+        {
+            LOG_ERR("Device name filters cannot be turned on (err %d, %s)", 
+                err, strerror(err));
+            return err;
+        }
+
+        scan_param.type = BT_LE_SCAN_TYPE_ACTIVE;
     }
 
-    return err;
+    err = bt_le_scan_start(&scan_param, BLE_Zephyr_callback);
+    if (err)
+    {
+        LOG_ERR("BLE scanning could not start. (err %d, %s)",
+            err, strerror(err));
+        return err;
+    }
+    
+    #endif
+
+    return 0;
+}
+
+static void scan_stop()
+{
+    LOG_INF("NordicNUSDriver::scan_stop");
+
+    bt_scan_filter_disable();
+    bt_scan_filter_remove_all();
+
+	int err = bt_le_scan_stop();
+	if ((err != 0) && (err != -EALREADY)) {
+		LOG_ERR("Stop LE scan failed (err %d, %s)", err, strerror(err));
+	}
+
 }
 
 static int scan_init(void)
 {
-	int err;
 	struct bt_scan_init_param scan_init = {
 		.connect_if_match = 1,
 	};
@@ -440,29 +481,9 @@ static int scan_init(void)
 	bt_scan_init(&scan_init);
 	bt_scan_cb_register(&scan_cb);
 
-    // Add scan filters for the intended devices.
-    for (int i = 0; i < MaxSensors; ++i)
-    {
-        LOG_INF("Connecting filter %d for device %s...", i, names[i]);
-        err = bt_scan_filter_add(BT_SCAN_FILTER_TYPE_NAME, names[i]);
-        if (err) {
-            LOG_ERR("Filter %d cannot be set for device %s (err %d)",
-            i, names[i], err);
-            return err;
-        }
-    }
-	
-	err = bt_scan_filter_enable(BT_SCAN_NAME_FILTER, false);
-    if (err){
-        LOG_ERR("Device name filters cannot be turned on (err %d)", err);
-        return err;
-    }
-
 	LOG_INF("Scan module initialized");
-	return err;
+	return 0;
 }
-
-#endif
 
 /***
 ****      (Dis)Connection, security.
@@ -480,13 +501,15 @@ static void gatt_discover(const int id)
     }
 
     LOG_INF("Running NUS discovery for %s", names[id]);
+    struct bt_uuid_128 nus_uuid = BT_UUID_INIT_128(BT_UUID_NUS_VAL);
 	err = bt_gatt_dm_start(
         connections[id],
-		BT_UUID_NUS_SERVICE,
+		(struct bt_uuid *)&nus_uuid,
 		&discovery_cb,
         &nus_clients[id]);
 	if (err) {
-		LOG_ERR("could not start the discovery procedure, error code: %d", err);
+		LOG_ERR("could not start the discovery procedure, error code: %d (%s)",
+            err, strerror(err));
 	}
 }
 
@@ -496,8 +519,10 @@ static void exchange_func(
     struct bt_gatt_exchange_params *params)
 {
 	if (!err) LOG_INF("MTU exchange done");
-	else LOG_WRN("MTU exchange failed (err %" PRIu8 ")", err);
+	else LOG_WRN("MTU exchange failed (err %" PRIu8 " - %s)", err, strerror(err));
 }
+
+#endif
 
 static void connected(
     struct bt_conn * conn,
@@ -506,11 +531,11 @@ static void connected(
     char addr[BT_ADDR_LE_STR_LEN];
     int err;
 
-    LOG_INF("NordicNUSDriver::connected");
+    LOG_DBG("NordicNUSDriver::connected");
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	if (conn_err) {
-		LOG_INF("Failed to connect to %s (%d)", addr, conn_err);
+		LOG_INF("Failed to connect to %s (%d - %s)", addr, conn_err, strerror(conn_err));
 
         // Need to dereference on of our connection slots?
         uint8_t slot = slot_from_conn(conn);
@@ -520,6 +545,11 @@ static void connected(
             bt_conn_unref(connections[slot]);
             connections[slot] = NULL;
         }
+
+        #if defined(CONFIG_ROLE_HUB)
+        scan_start();
+        #endif
+
 		return;
 	}
 
@@ -531,7 +561,7 @@ static void connected(
     for (int ci = 0; ci < MaxConnections; ++ci)
     {
         // If names match or we hit the last connection...
-        LOG_INF("Comparing %d %s to %s...", ci, name, names[ci]);
+        LOG_DBG("Comparing %d %s to %s...", ci, name, names[ci]);
         if ((ci == PCConnection) || (strcmp(name, names[ci]) == 0))
         {
             LOG_INF("Connected to %s at %s",
@@ -554,19 +584,23 @@ static void connected(
     // Exchange MTU config.
 	static struct bt_gatt_exchange_params exchange_params;
 
+    #ifdef CONFIG_ROLE_HUB
 	exchange_params.func = exchange_func;
 	err = bt_gatt_exchange_mtu(conn, &exchange_params);
 	if (err) {
-		LOG_WRN("MTU exchange failed (err %d)", err);
+		LOG_WRN("MTU exchange failed (err %d - %s)", err, strerror(err));
 	}
 
 	err = bt_conn_set_security(conn, BT_SECURITY_L1);
 	if (err) {
-		LOG_WRN("Failed to set security: %d", err);
+		LOG_WRN("Failed to set security: %d (%s)", err, strerror(err));
 	}
 
-    #ifdef CONFIG_ROLE_HUB
-    if (slot < MaxSensors) gatt_discover(slot);
+    if (slot < MaxSensors)
+    {
+        scan_stop();
+        gatt_discover(slot);
+    }
     LOG_INF("%d of %d sensors connected.", sensor_connections, MaxSensors);
     #endif
 }
@@ -590,10 +624,31 @@ static void disconnected(
         // If handles match...
         if (conn == connections[ci])
         {
-            LOG_INF("Disconnected from %s at %s (reason: %x)",
+            // err can mean either of the following:
+            // - BT_HCI_ERR_UNKNOWN_CONN_ID
+            // Creating the connection started by bt_conn_le_create
+            // canceled either by the user through bt_conn_disconnect
+            // or by the timeout in the host through bt_conn_le_create_param 
+            // timeout parameter, which defaults to @kconfig{CONFIG_BT_CREATE_CONN_TIMEOUT} seconds.
+            // - BT_HCI_ERR_ADV_TIMEOUT
+            // High duty cycle directed connectable advertiser started by
+            // bt_le_adv_start failed to be connected within the timeout.
+            const char * reason_str = "Unknown";
+            switch (reason)
+            {
+                case BT_HCI_ERR_UNKNOWN_CONN_ID:
+                    reason_str = "Unknown connection ID"; break;
+                case BT_HCI_ERR_CONN_FAIL_TO_ESTAB:
+                    reason_str = "Connection failed to establish"; break;
+                case BT_HCI_ERR_ADV_TIMEOUT:
+                    reason_str = "Advertising timeout"; break;
+                case BT_HCI_ERR_CONN_TIMEOUT:
+                    reason_str = "Connection timeout"; break;
+            }
+            LOG_WRN("Disconnected from %s at %s (reason: %x - %s)",
                 ci == PCConnection ? "PC" : names[ci],
                 addr,
-                reason);
+                reason, reason_str);
             bt_conn_unref(connections[ci]);
             connections[ci] = NULL;
             found = true;
@@ -615,26 +670,9 @@ static void disconnected(
     LOG_INF("%d of %d sensors connected.", sensor_connections, MaxSensors);
 
     // Restart active scanning if necessary.
-    err = scan_start(sensor_connections < MaxSensors);
-    if (err) LOG_ERR("Scanning failed to start (err %d)", err);
+    err = scan_start();
+    if (err) LOG_ERR("Scanning failed to start (err %d - %s)", err, strerror(err));
     #endif
-}
-
-static void security_changed(
-    struct bt_conn *conn,
-    bt_security_t level,
-	enum bt_security_err err)
-{
-	char addr[BT_ADDR_LE_STR_LEN];
-
-    LOG_INF("NordicNUSDriver::security_changed");
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
-
-	if (!err) {
-		LOG_INF("Security changed: %s level %u", addr, level);
-	} else {
-		LOG_WRN("Security failed: %s level %u err %d", addr, level, err);
-    }
 }
 
 static bool le_param_req(
@@ -691,9 +729,10 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.disconnected = disconnected,
 	.le_param_req = le_param_req,
 	.le_param_updated = le_param_updated,
+    #if defined(CONFIG_ROLE_HUB)
     .le_phy_updated = le_phy_updated,
-    .le_data_len_updated = le_data_length_updated,
-	.security_changed = security_changed
+    .le_data_len_updated = le_data_length_updated
+    #endif
 };
 
 static void auth_cancel(struct bt_conn *conn)
@@ -741,17 +780,12 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 ****      NUS
 ****/
 
+#if defined(CONFIG_ROLE_HUB)
 static uint8_t bt_nus_sensor_received(
     struct bt_nus_client *nus,
 	const uint8_t *data,
     uint16_t len)
-// static uint8_t bt_nus_sensor_received(
-//     struct bt_conn *nus,
-//     const uint8_t slot,
-// 	const uint8_t *data,
-//     uint16_t len)
 {
-    int err;
     char addr[BT_ADDR_LE_STR_LEN] = {0};
 
     bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
@@ -773,10 +807,6 @@ static uint8_t bt_nus_sensor_received(
                 slot, throughput[slot], dt, throughput[slot] / 1024.0 / dt);
             last_update[slot] = now;
             throughput[slot] = 0;
-
-            static int iter = 0;
-            if (++iter % 12 == 0)
-                print_connection_info(nus->conn);
         }
     }
 
@@ -789,24 +819,13 @@ static uint8_t bt_nus_sensor_received(
 
     return BT_GATT_ITER_CONTINUE;
 }
-
-// static void bt_nus_dispatch_received(
-// 	struct bt_conn *conn,
-// 	const uint8_t *data,
-//     uint16_t len)
-// {
-//     LOG_INF("Dispatch called for %d bytes", len);
-//     const uint8_t slot = slot_from_conn(conn);
-//     if (slot < MaxSensors)
-//         bt_nus_sensor_received(conn, slot, data, len);
-//     else
-//         bt_nus_pc_received(conn, data, len);
-// }
+#endif
 
 static int nus_client_init(void)
 {
 	int err = 0;
 
+    #if defined(CONFIG_ROLE_HUB)
     LOG_INF("NordicNUSDriver::nus_client_init");
 	struct bt_nus_client_init_param sensor_init = {
 		.cb = {
@@ -820,13 +839,12 @@ static int nus_client_init(void)
     {
         err = bt_nus_client_init(&nus_clients[i], &sensor_init);
         if (err) {
-            LOG_ERR("NUS Client initialization failed for sensor (slot %d, err %d)",
-                i, err);
+            LOG_ERR("NUS Client initialization failed for sensor (slot %d, err %d - %s)",
+                i, err, strerror(err));
             return err;
         }
     }
 
-    #if defined(CONFIG_ROLE_HUB)
     // Initialize a general callback for PC connections. This is only needed for
     // the hub units which can accept data input. The peripheral sensors can
     // just ignore it.
@@ -834,11 +852,13 @@ static int nus_client_init(void)
         .received = bt_nus_pc_received
     };
 	err = bt_nus_init(&nus_cb);
+    #else
+    err = bt_nus_init(NULL);
+    #endif
 	if (err) {
-		LOG_ERR("bt_nus_init: Failed to initialize UART service (err: %d)", err);
+		LOG_ERR("bt_nus_init: Failed to initialize UART service (err: %d, %s)", err, strerror(err));
 		return err;
 	}
-    #endif
 
 	LOG_INF("NUS Clients module initialized");
 	return err;
@@ -861,19 +881,21 @@ int init_nus()
 
 	err = bt_conn_auth_cb_register(&conn_auth_callbacks);
 	if (err) {
-		LOG_ERR("Failed to register authorization callbacks.");
+		LOG_ERR("Failed to register authorization callbacks. %d - %s",
+            err, strerror(err));
 		return err;
 	}
 
 	err = bt_conn_auth_info_cb_register(&conn_auth_info_callbacks);
 	if (err) {
-		LOG_ERR("Failed to register authorization info callbacks.\n");
+		LOG_ERR("Failed to register authorization info callbacks. %d - %s",
+            err, strerror(err));
 		return err;
 	}
 
     err = bt_enable(NULL);
     if (err) {
-        LOG_ERR("Error bt_enable: %d", err);
+        LOG_ERR("Error bt_enable: %d - %s", err, strerror(err));
         return err;
     }
 
@@ -889,17 +911,17 @@ int init_nus()
         LOG_ERR("Error scan_init: %d", err);
         return err;
     }
-    #endif
 
     err = nus_client_init();
     if (err) {
-        LOG_ERR("nus_client_init: Failed to initialize BLE UART service (err: %d)", err);
+        LOG_ERR("nus_client_init: Failed to initialize BLE UART service (err: %d - %s)", err, strerror(err));
         return err;
     }
+    #endif
 
     // Update the BLE name using the device config.
     size_t name_len = strlen(device_config.name);
-    ad[1].data = device_config.name;
+    ad[1].data = (uint8_t*)device_config.name;
     ad[1].data_len = name_len;
 
     bt_set_name(device_config.name);
@@ -916,7 +938,7 @@ int init_nus()
 
     #ifdef CONFIG_ROLE_HUB
 	// err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
-    err = scan_start(true);
+    err = scan_start();
 	if (err) {
 		LOG_ERR("Scanning failed to start (err %d)", err);
 		return err;

@@ -17,6 +17,9 @@ bool erase_flash(const uint32_t size);
 bool erase_used_flash();
 bool erase_all_flash();
 
+void disable_sensors();
+void enable_sensors();
+
 bool flash_is_logging();
 void start_flash_logging();
 void stop_flash_logging();
