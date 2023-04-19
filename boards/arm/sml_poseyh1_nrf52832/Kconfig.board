@@ -1,0 +1,3 @@
+config BOARD_SML_POSEYH1_NRF52832
+	bool "SML Posey-h1"
+	depends on SOC_NRF52832_QFAA
