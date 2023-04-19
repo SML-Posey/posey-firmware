@@ -9,6 +9,7 @@
 #include <zephyr/logging/log.h>
 
 #include "bno08x.h"
+#include "posey-platform/platform/sensors/imu_reset.h"
 
 // LOG_MODULE_REGISTER(BNO08x, LOG_LEVEL_DBG);
 LOG_MODULE_REGISTER(BNO08x, CONFIG_SENSOR_LOG_LEVEL);
@@ -260,18 +261,8 @@ static const struct sensor_driver_api bno08x_driver_api = {
 
 static void hal_hardwareReset(void)
 {
-    if (false) //_reset_pin != -1)
-    {
-        LOG_DBG("BNO08x Hardware reset");
-
-        // pinMode(_reset_pin, OUTPUT);
-        // digitalWrite(_reset_pin, HIGH);
-        // delay(10);
-        // digitalWrite(_reset_pin, LOW);
-        // delay(10);
-        // digitalWrite(_reset_pin, HIGH);
-        // delay(10);
-    }
+	LOG_DBG("BNO08x Hardware reset");
+	imu_reset();
 }
 
 static uint32_t hal_getTimeUs(sh2_Hal_t *self)
@@ -285,7 +276,7 @@ static void hal_callback(void *cookie, sh2_AsyncEvent_t *pEvent)
     // If we see a reset, set a flag so that sensors will be reconfigured.
     if (pEvent->eventId == SH2_RESET)
     {
-        LOG_DBG("Reset!");
+        LOG_INF("IMU reset!");
 		if (cookie != NULL)
 		{
 			struct bno08x_data * data = ((struct device *)cookie)->data;
@@ -318,6 +309,7 @@ static int hal_enable_report(
 // Handle sensor events.
 static void hal_sensorHandler(void *cookie, sh2_SensorEvent_t *event)
 {
+	LOG_DBG("Sensor event!");
 	if (cookie == NULL) return;
 	struct bno08x_data * data = ((struct device *)cookie)->data;
 	if (data == NULL) return;
@@ -357,6 +349,16 @@ static void bno08x_trigger_handler(
 			data->qk = value.un.rotationVector.k;
 			data->qr = value.un.rotationVector.real;
 			data->qacc = value.un.rotationVector.accuracy;
+			++data->qn;
+			LOG_DBG("rot < %.2f , %.2f , %.2f, %.2f > acc: %.2f",
+				data->qi, data->qj, data->qk, data->qr, data->qacc);
+		}
+		else if (value.sensorId == SH2_GAME_ROTATION_VECTOR)
+		{
+			data->qi = value.un.gameRotationVector.i;
+			data->qj = value.un.gameRotationVector.j;
+			data->qk = value.un.gameRotationVector.k;
+			data->qr = value.un.gameRotationVector.real;
 			++data->qn;
 			LOG_DBG("rot < %.2f , %.2f , %.2f, %.2f > acc: %.2f",
 				data->qi, data->qj, data->qk, data->qr, data->qacc);
@@ -434,6 +436,7 @@ static int bno08x_init_chip(const struct device *dev)
 
 static int bno08x_init_sh2(const struct device *dev)
 {
+	LOG_INF("Initializing BNO08x");
 	struct bno08x_data *data = dev->data;
 
 	data->sh2_hal.getTimeUs = hal_getTimeUs;
@@ -441,12 +444,15 @@ static int bno08x_init_sh2(const struct device *dev)
 
 	// Wait for BNO08x to boot.
 	LOG_INF("BNO08x wait delay...");
-	k_sleep(K_MSEC(1000));
+	k_sleep(K_MSEC(100));
 
     // Open SH2 interface (also registers non-sensor event handler.)
     int status = sh2_open(&data->sh2_hal, hal_callback, NULL);
     if (status != SH2_OK)
+	{
+		LOG_ERR("sh2_open failed: %d", status);
         return status;
+	}
 
     // Check connection partially by getting the product id's
 	sh2_ProductIds_t prodIds;
@@ -520,6 +526,7 @@ static int bno08x_init(const struct device *dev)
 
 	static const uint32_t period_us = 20000;
 
+	LOG_INF("Initializing accelerometer...");
 	ret = hal_enable_report(SH2_ACCELEROMETER, period_us);
 	if (ret != 0)
 	{
@@ -538,7 +545,8 @@ static int bno08x_init(const struct device *dev)
 	// 	LOG_ERR("Failed to enable magnetic field report");
 	// 	return ret;
 	// }
-	ret = hal_enable_report(SH2_ROTATION_VECTOR, period_us);
+	LOG_INF("Initializing 6DoF rotation vector...");
+	ret = hal_enable_report(SH2_GAME_ROTATION_VECTOR, period_us);
 	if (ret != 0)
 	{
 		LOG_ERR("Failed to enable rotation report");

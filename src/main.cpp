@@ -1,15 +1,16 @@
 #include "platform.hpp"
 
+#include <zephyr/sys/reboot.h>
+
 #define LOG_MODULE_NAME posey_main
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
 void die(const char * const message)
 {
-    while (true)
-    {
-        LOG_ERR("%s", message);
-        k_sleep(K_SECONDS(1));
-    }
+    LOG_ERR("%s", message);
+    LOG_ERR("Waiting 5s then rebooting.");
+    Clock::delay_msec(5000);
+    sys_reboot(SYS_REBOOT_COLD);
 }
 
 int main()

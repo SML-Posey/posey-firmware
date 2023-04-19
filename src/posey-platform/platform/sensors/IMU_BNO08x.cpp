@@ -2,6 +2,7 @@
 #include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 
 #include "bno08x.h"
+#include "imu_reset.h"
 
 LOG_MODULE_REGISTER(IMU_BNO08x);
 
@@ -14,7 +15,8 @@ bool IMU_BNO08x::setup()
     _dev = device_get_binding(DT_LABEL(DT_INST(0, ceva_bno08x)));
 
 	if (_dev == nullptr) {
-		LOG_WRN("Could not get BNO08x device\n");
+		LOG_WRN("Could not get BNO08x device");
+        imu_reset();
         return false;
 	}
 
@@ -54,6 +56,13 @@ bool IMU_BNO08x::collect()
     data.Qk = _data->qk;
     data.Qr = _data->qr;
     // data.Qacc = _data->qacc;
+
+    static int iter = 0;
+    if (iter++ % 100 == 0) {
+        LOG_INF("A: [%.2f %.2f %.2f] Q: [%.2f %.2f %.2f %.2f]",
+            data.Ax, data.Ay, data.Az,
+            data.Qi, data.Qj, data.Qk, data.Qr);
+    }
 
     return true;
 }

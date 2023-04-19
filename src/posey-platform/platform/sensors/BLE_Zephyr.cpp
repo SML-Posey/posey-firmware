@@ -40,7 +40,7 @@ extern "C" void BLE_Zephyr_callback(
             int8_t pwr = *reinterpret_cast<const int8_t *>(&data[29]);
 
             BLE_Zephyr::reference->add_detection(
-                Clock::get_usec<uint32_t>(),
+                Clock::get_msec<uint32_t>(),
                 &data[9],
                 major,
                 minor,
@@ -59,8 +59,8 @@ extern "C" void BLE_Zephyr_callback(
                 uuid_str, BT_UUID_STR_LEN);
             uuid_str[BT_UUID_STR_LEN-1] = 0;
 
-            LOG_DBG("iBeacon found: sz: %d; uuid: %s; major: %d (0x%x); minor: %d (0x%x); pwr: %d; rssi: %d",
-                ad->len, uuid_str, major, major, minor, minor, pwr, rssi);
+            LOG_DBG("iBeacon found: uuid: %s; major: %d (0x%x); minor: %d (0x%x); pwr: %d; rssi: %d",
+                uuid_str, major, major, minor, minor, pwr, rssi);
             LOG_HEXDUMP_DBG(ad->data, ad->len, "Data:");
         }
     }
