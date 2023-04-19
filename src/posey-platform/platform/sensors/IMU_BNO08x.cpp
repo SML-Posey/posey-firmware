@@ -4,6 +4,9 @@
 #include "bno08x.h"
 #include "imu_reset.h"
 
+#include <zephyr/sys/reboot.h>
+#include <zephyr/logging/log_ctrl.h>
+
 LOG_MODULE_REGISTER(IMU_BNO08x);
 
 IMU_BNO08x::IMU_BNO08x()
@@ -58,11 +61,34 @@ bool IMU_BNO08x::collect()
     // data.Qacc = _data->qacc;
 
     static int iter = 0;
-    if (iter++ % 100 == 0) {
+    if (iter++ % 300 == 0) {
         LOG_INF("A: [%.2f %.2f %.2f] Q: [%.2f %.2f %.2f %.2f]",
             data.Ax, data.Ay, data.Az,
             data.Qi, data.Qj, data.Qk, data.Qr);
     }
+
+    // Check for missed data and reboot the system if we miss too much.
+    static uint32_t consecutive_misses = 0;
+    static uint32_t last_An = 0;
+    static uint32_t last_Qn = 0;
+    if ((last_An == _data->an) || (last_Qn == _data->qn)) {
+        consecutive_misses++;
+        // If we miss 10 seconds of data, reboot the system.
+        if (consecutive_misses > 500) {
+            LOG_ERR("Too many consecutive misses (%d), rebooting", consecutive_misses);
+
+            // Flush the log buffer before rebooting.
+            if (IS_ENABLED(CONFIG_LOG_MODE_DEFERRED))
+                while (log_process());
+            Clock::delay_msec(1000);
+            
+            sys_reboot(SYS_REBOOT_COLD);
+        }
+    } else {
+        consecutive_misses = 0;
+    }
+    last_An = _data->an;
+    last_Qn = _data->qn;
 
     return true;
 }
