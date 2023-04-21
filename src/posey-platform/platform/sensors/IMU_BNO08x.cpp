@@ -73,8 +73,8 @@ bool IMU_BNO08x::collect()
     static uint32_t last_Qn = 0;
     if ((last_An == _data->an) || (last_Qn == _data->qn)) {
         consecutive_misses++;
-        // If we miss 10 seconds of data, reboot the system.
-        if (consecutive_misses > 500) {
+        // If we miss 15 seconds of data, reboot the system.
+        if (consecutive_misses > 50*15) {
             LOG_ERR("Too many consecutive misses (%d), rebooting", consecutive_misses);
 
             // Flush the log buffer before rebooting.

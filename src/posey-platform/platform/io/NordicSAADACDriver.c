@@ -1,9 +1,27 @@
 #include "NordicSAADACDriver.h"
 
 #include <zephyr/logging/log.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/pm/pm.h>
 
 #define LOG_MODULE_NAME adc
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
+
+void deep_sleep()
+{
+    k_timeout_t timeout = K_MINUTES(5);
+
+	int sleep_m = (int)(timeout.ticks * 1.0 / CONFIG_SYS_CLOCK_TICKS_PER_SEC / 60.0);
+	int sleep_s = (int)(timeout.ticks * 1.0 / CONFIG_SYS_CLOCK_TICKS_PER_SEC - sleep_m * 60);
+
+	LOG_INF("Sleeping for %d minutes %d seconds...", sleep_m, sleep_s);
+	static const struct pm_state_info suspend_state = {PM_STATE_SUSPEND_TO_IDLE, 0, 0};
+	pm_state_force(0u, &suspend_state);
+	k_sleep(timeout);
+
+    LOG_INF("Waking up...");
+}
 
 #ifndef CONFIG_ADC
 bool init_adc()
@@ -14,7 +32,7 @@ bool init_adc()
 
 float read_Vbatt()
 {
-    return 0.0f;
+    return 3.77f;
 }
 
 #else
@@ -22,8 +40,6 @@ float read_Vbatt()
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/adc.h>
-#include <zephyr/kernel.h>
-#include <zephyr/sys/util.h>
 
 #if !DT_NODE_EXISTS(DT_PATH(zephyr_user)) || \
     !DT_NODE_HAS_PROP(DT_PATH(zephyr_user), io_channels)
@@ -104,10 +120,6 @@ float read_Vbatt()
     static const float R2 = 30.9e3;
     static const float alpha = 1.0 + R1/R2;
     float Vbatt = Vain*alpha;
-
-    static int iter = 0;
-    if (iter++ % 10 == 0)
-        LOG_INF("Vbatt: %.2f V", Vbatt);
 
     return Vbatt;
 }

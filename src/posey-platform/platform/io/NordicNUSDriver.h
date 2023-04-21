@@ -8,6 +8,10 @@ extern "C" {
 #endif
 
 int init_nus();
+int num_connected_sensors();
+void close_connections();
+void enable_scanning();
+void disable_scanning();
 
 #ifdef CONFIG_ROLE_HUB
 int8_t read_conn_rssi(struct bt_conn * conn);

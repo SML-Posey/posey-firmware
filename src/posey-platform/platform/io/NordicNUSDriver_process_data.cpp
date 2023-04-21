@@ -165,6 +165,7 @@ extern "C" void process_data(
         float pct = 100.0*used/flash_size;
         LOG_INF("Recording in progress: %.2f of %.2f MB (%.2f%%)",
             used, flash_size, pct);
+        config_update_data_end(flash_log_size());
     }
 
     if (conn != NULL)

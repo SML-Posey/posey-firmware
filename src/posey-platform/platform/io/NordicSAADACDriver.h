@@ -8,6 +8,7 @@ extern "C" {
 
 bool init_adc();
 float read_Vbatt();
+void deep_sleep();
 
 #ifdef __cplusplus
 }

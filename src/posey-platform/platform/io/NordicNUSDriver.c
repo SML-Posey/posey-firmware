@@ -42,10 +42,12 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_INF);
 #define MaxConnections (MaxSensors + 1)
 #define PCConnection (MaxConnections - 1)
 
+// ATW: Fix this.
 static const char * names[MaxConnections] = {
-    "Posey w8 Thistle",
-    "Posey w8 Flox",
-    "Posey r2 Tulip",
+    // "Posey r2 Tulip",           // Flox
+    "Posey w8 Thistle",      // Carnation
+    "Posey xx Unknown",
+    "Posey xx Unknown",
     "<PC>" // PC connection.
 };
 static struct bt_conn * connections[MaxConnections] = {
@@ -85,7 +87,7 @@ static uint32_t last_update[MaxConnections] = {
 };
 #endif
 
-static int num_connected_sensors()
+int num_connected_sensors()
 {
     int sensor_connections = 0;
     for (int ci = 0; ci < MaxSensors; ++ci)
@@ -187,94 +189,95 @@ struct bt_conn * get_pc_connection()
 ****      GATT NUS service discovery.
 ****/
 
-static void mtu_exchange_updated(
-    struct bt_conn *conn,
-    uint8_t err,
-    struct bt_gatt_exchange_params *params)
-{
-    if (!err)
-    {
-        LOG_INF("MTU exchange done. MTU = %d", bt_gatt_get_mtu(conn));
-    }
-    else
-    {
-        LOG_WRN("MTU exchange failed (err %" PRIu8 ")", err);
-    }
-}
+// static void mtu_exchange_updated(
+//     struct bt_conn *conn,
+//     uint8_t err,
+//     struct bt_gatt_exchange_params *params)
+// {
+//     if (!err)
+//     {
+//         LOG_INF("MTU exchange done. MTU = %d", bt_gatt_get_mtu(conn));
+//     }
+//     else
+//     {
+//         LOG_WRN("MTU exchange failed (err %" PRIu8 ")", err);
+//     }
+// }
 
-static int connection_configuration_set(
-    struct bt_conn *conn,
-    const struct bt_le_conn_param *conn_param,
-    const struct bt_conn_le_phy_param *phy,
-    const struct bt_conn_le_data_len_param *data_len)
-{
-    int err = print_connection_info(conn);
-    if (err) return err;
+// static int connection_configuration_set(
+//     struct bt_conn *conn,
+//     const struct bt_le_conn_param *conn_param,
+//     const struct bt_conn_le_phy_param *phy,
+//     const struct bt_conn_le_data_len_param *data_len)
+// {
+//     int err = print_connection_info(conn);
+//     if (err) return err;
 
-    err = bt_conn_le_phy_update(conn, phy);
-    if (err)
-    {
-        LOG_WRN("PHY update failed: %d", err);
-        // return err;
-    }
+//     err = bt_conn_le_phy_update(conn, phy);
+//     if (err)
+//     {
+//         LOG_WRN("PHY update failed: %d", err);
+//         // return err;
+//     }
 
-    LOG_INF("PHY update pending");
+//     LOG_INF("PHY update pending");
 
-    struct bt_conn_info info = {0};
-    err = bt_conn_get_info(conn, &info);
-    if (err)
-    {
-        LOG_ERR("Failed to get connection info %d", err);
-        return err;
-    }
+//     struct bt_conn_info info = {0};
+//     err = bt_conn_get_info(conn, &info);
+//     if (err)
+//     {
+//         LOG_ERR("Failed to get connection info %d", err);
+//         return err;
+//     }
 
-    if (info.le.data_len->tx_max_len != data_len->tx_max_len)
-    {
-        data_length_req = true;
+//     if (info.le.data_len->tx_max_len != data_len->tx_max_len)
+//     {
+//         data_length_req = true;
 
-        err = bt_conn_le_data_len_update(conn, data_len);
-        if (err)
-        {
-            LOG_WRN("LE data length update failed: %d", err);
-            // return err;
-        }
+//         err = bt_conn_le_data_len_update(conn, data_len);
+//         if (err)
+//         {
+//             LOG_WRN("LE data length update failed: %d", err);
+//             // return err;
+//         }
 
-        LOG_INF("LE Data length update pending");
-    }
+//         LOG_INF("LE Data length update pending");
+//     }
 
-    if (info.le.interval != conn_param->interval_max)
-    {
-        err = bt_conn_le_param_update(conn, conn_param);
-        if (err)
-        {
-            LOG_WRN("Connection parameters update failed: %d", err);
-            // return err;
-        }
+//     if (info.le.interval != conn_param->interval_max)
+//     {
+//         err = bt_conn_le_param_update(conn, conn_param);
+//         if (err)
+//         {
+//             LOG_WRN("Connection parameters update failed: %d", err);
+//             // return err;
+//         }
 
-        LOG_INF("Connection parameters update pending");
-    }
+//         LOG_INF("Connection parameters update pending");
+//     }
 
-    // So if we want a different MTU than default, we need to exchange with the peer.
-    // Important understandings found in:
-    //  https://devzone.nordicsemi.com/f/nordic-q-a/81860/set-mtu-size-in-zephyr/341062#341062
-    //
-    // In our proj.conf, we already have CONFIG_BT_L2CAP_TX_MTU=247, but that only
-    //  seems to be referenced within functions of bt_gatt_exchange_mtu()
-    // Setup callback to capture MTU exchange status with Peer.
-    mtu_exchange_params.func = mtu_exchange_updated;
-    err = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
-    if (err)
-    {
-        LOG_WRN("MTU exchange failed (err %d)", err);
-        // return err;
-    }
+//     // So if we want a different MTU than default, we need to exchange with the peer.
+//     // Important understandings found in:
+//     //  https://devzone.nordicsemi.com/f/nordic-q-a/81860/set-mtu-size-in-zephyr/341062#341062
+//     //
+//     // In our proj.conf, we already have CONFIG_BT_L2CAP_TX_MTU=247, but that only
+//     //  seems to be referenced within functions of bt_gatt_exchange_mtu()
+//     // Setup callback to capture MTU exchange status with Peer.
+//     mtu_exchange_params.func = mtu_exchange_updated;
+//     err = bt_gatt_exchange_mtu(conn, &mtu_exchange_params);
+//     if (err)
+//     {
+//         LOG_WRN("MTU exchange failed (err %d)", err);
+//         // return err;
+//     }
 
-    LOG_INF("MTU exchange pending");
+//     LOG_INF("MTU exchange pending");
 
-    // If we are here then all the connection negotiations completed succesfully
-    return 0;
-}
+//     // If we are here then all the connection negotiations completed succesfully
+//     return 0;
+// }
 
+static bool scanning_enabled = true;
 static int scan_start();
 static void scan_stop();
 
@@ -401,6 +404,7 @@ static int scan_start()
     #if defined(CONFIG_ROLE_HUB)
 
     scan_stop();
+    if (!scanning_enabled) return -1;
 
     int err;
     struct bt_le_scan_param scan_param = {
@@ -411,7 +415,8 @@ static int scan_start()
     };
 
     int sensors_connected = num_connected_sensors();
-    if ((!sensors_enabled) || (sensors_connected >= MaxSensors))
+    // ATW: Passive after a single connection.
+    if ((!sensors_enabled) || (sensors_connected >= 1)) //MaxSensors))
     {
         LOG_INF("BLE scanning: Connected to %d sensors. Passive scanning.", sensors_connected);
     }
@@ -531,7 +536,7 @@ static void connected(
     char addr[BT_ADDR_LE_STR_LEN];
     int err;
 
-    LOG_DBG("NordicNUSDriver::connected");
+    LOG_INF("NordicNUSDriver::connected");
 
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 	if (conn_err) {
@@ -587,6 +592,7 @@ static void connected(
     #ifdef CONFIG_ROLE_HUB
 	exchange_params.func = exchange_func;
 	err = bt_gatt_exchange_mtu(conn, &exchange_params);
+
 	if (err) {
 		LOG_WRN("MTU exchange failed (err %d - %s)", err, strerror(err));
 	}
@@ -948,4 +954,35 @@ int init_nus()
     #endif
 
     return 0;
+}
+
+void close_connections()
+{
+    for (int i = 0; i < MaxConnections; ++i)
+    {
+        if (connections[i])
+        {
+            bt_conn_disconnect(
+                connections[i], 
+                BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+            bt_conn_unref(connections[i]);
+            connections[i] = NULL;
+        }
+    }
+}
+
+void disable_scanning()
+{
+    #if defined(CONFIG_ROLE_HUB)
+    scanning_enabled = false;
+    scan_stop();
+    #endif
+}
+
+void enable_scanning()
+{
+    #if defined(CONFIG_ROLE_HUB)
+    scanning_enabled = true;
+    scan_start();
+    #endif
 }
