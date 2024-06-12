@@ -1,0 +1,127 @@
+// To get started, press Ctrl+Space (or Option+Esc) to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https: //nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
+
+&pinctrl {
+    i2c0_default: i2c0_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 1, 2)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 3)>;
+        };
+    };
+
+    i2c0_sleep: i2c0_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SDA, 1, 2)>,
+                    <NRF_PSEL(TWIM_SCL, 1, 3)>;
+            low-power-enable;
+        };
+    };
+
+    qspi_default: qspi_default {
+        group1 {
+            psels = <NRF_PSEL(QSPI_SCK, 0, 17)>,
+                    <NRF_PSEL(QSPI_IO0, 0, 13)>,
+                    <NRF_PSEL(QSPI_IO1, 0, 14)>,
+                    <NRF_PSEL(QSPI_IO2, 0, 15)>,
+                    <NRF_PSEL(QSPI_IO3, 0, 16)>,
+                    <NRF_PSEL(QSPI_CSN, 0, 18)>;
+            nordic,drive-mode = <NRF_DRIVE_H0H1>;
+        };
+        group2 {
+            psels = <NRF_PSEL(QSPI_CSN, 0, 18)>;
+            bias-pull-up;
+        };
+    };
+
+    qspi_sleep: qspi_sleep {
+        group1 {
+            psels = <NRF_PSEL(QSPI_SCK, 0, 17)>,
+                    <NRF_PSEL(QSPI_IO0, 0, 13)>,
+                    <NRF_PSEL(QSPI_IO1, 0, 14)>,
+                    <NRF_PSEL(QSPI_IO2, 0, 15)>,
+                    <NRF_PSEL(QSPI_IO3, 0, 16)>;
+            low-power-enable;
+        };
+        group2 {
+            psels = <NRF_PSEL(QSPI_CSN, 0, 18)>;
+            low-power-enable;
+            bias-pull-up;
+        };
+    };
+};
+
+/ {
+    zephyr,user {
+        io-channels = <&adc 1>;
+        imureset-gpios = <&gpio0 8 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    };
+};
+
+&uart0 {
+    status = "disabled";
+};
+
+&adc {
+    status = "okay";
+};
+
+&gpiote {
+    status = "okay";
+};
+
+// Needed for BNO08x driver config. Might need to trace exactly why...
+&gpio0 {
+    label = "gpio0";
+    status = "okay";
+};
+
+&gpio1 {
+    label = "gpio1";
+    status = "okay";
+};
+
+&i2c0 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    clock-frequency = <100000>;
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    bno08x0: bno08x@4a {
+        compatible = "ceva,bno08x";
+        label = "imu";
+        reg = <0x4a>;
+        irq-gpios = <&gpio0 10 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+};
+
+&qspi {
+    status = "okay";
+    pinctrl-0 = <&qspi_default>;
+    pinctrl-1 = <&qspi_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    w25q01: w25q01jvzeim@0 {
+        compatible = "nordic,qspi-nor";
+        reg = <0>;
+        /* MX25R64 supports only pp and pp4io */
+        writeoc = "pp4io";
+        /* MX25R64 supports all readoc options */
+        readoc = "read4io";
+        sck-frequency = <8000000>;
+        size = <0x40000000>; // 1 GBit
+        has-dpd;
+        jedec-id = [ ef 70 21  ];
+    };
+};

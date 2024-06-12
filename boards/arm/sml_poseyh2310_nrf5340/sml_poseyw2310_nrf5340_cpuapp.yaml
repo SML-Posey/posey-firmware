@@ -1,0 +1,18 @@
+identifier: sml_poseyh2310_nrf5340_cpuapp
+name: SML_POSEYH2310_NRF5340_application_MCU
+type: mcu
+arch: arm
+ram: 448
+flash: 1024
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - adc
+  - counter
+  - gpio
+  - i2c
+  - spi
+  - watchdog
+  - nvs

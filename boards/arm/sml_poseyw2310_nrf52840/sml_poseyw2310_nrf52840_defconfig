@@ -1,0 +1,29 @@
+CONFIG_SOC_SERIES_NRF52X=y
+# should be CKAA, but not available yet from Nordic Semiconductor
+CONFIG_SOC_NRF52840_QIAA=y
+CONFIG_BOARD_SML_POSEYW2310_NRF52840=y
+
+# External XTAL
+CONFIG_CLOCK_CONTROL_NRF_K32SRC_XTAL=y
+CONFIG_CLOCK_CONTROL_NRF_K32SRC_500PPM=y
+
+# Enable hardware stack protection
+CONFIG_HW_STACK_PROTECTION=y
+
+# Enable MPU
+CONFIG_ARM_MPU=y
+
+# Enable RTT
+CONFIG_USE_SEGGER_RTT=y
+
+# Enable peripherals.
+CONFIG_GPIO=y
+CONFIG_I2C=y
+CONFIG_SENSOR=y
+CONFIG_BNO08x=y
+CONFIG_ADC=y
+
+# additional board options
+CONFIG_GPIO_AS_PINRESET=y
+
+CONFIG_PINCTRL=y

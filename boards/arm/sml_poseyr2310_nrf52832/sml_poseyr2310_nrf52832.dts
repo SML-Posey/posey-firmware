@@ -1,10 +1,10 @@
 /dts-v1/;
 #include <nordic/nrf52832_ciaa.dtsi>
-#include "sml_poseyh1_nrf52832-pinctrl.dtsi"
+#include "sml_poseyr2310_nrf52832-pinctrl.dtsi"
 
 / {
-	model = "SML Posey-h1 HUB nRF52832";
-	compatible = "sml,sml-poseyh1-nrf52832";
+	model = "SML Posey-r2310 RING nRF52832";
+	compatible = "sml,sml-poseyr2310-nrf52832";
 
 	chosen {
 		zephyr,sram = &sram0;
@@ -13,13 +13,16 @@
 	};
 
 	zephyr,user {
-		io-channels = <&adc 5>;
-		imureset-gpios = <&gpio0 17 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+		io-channels = <&adc 2>;
+		imureset-gpios = <&gpio0 12 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+		imucs-gpios = <&gpio0 9 (GPIO_PULL_DOWN | GPIO_ACTIVE_LOW)>;
+		imucopi-gpios = <&gpio0 14 (GPIO_PULL_DOWN | GPIO_ACTIVE_LOW)>;
 	};
+};
 
-	aliases {
-		spi-flash0 = &w25q01;
-	};
+&uicr {
+	gpio-as-nreset;
+	nfct-pins-as-gpios;
 };
 
 &gpiote {
@@ -39,31 +42,13 @@
 	pinctrl-0 = <&i2c0_default>;
 	pinctrl-1 = <&i2c0_sleep>;
 	pinctrl-names = "default", "sleep";
-	clock-frequency = <100000>;
+	clock-frequency = <I2C_BITRATE_STANDARD>;
 
 	bno08x0: bno08x@4a {
 		compatible = "ceva,bno08x";
 		label = "imu";
 		reg = <0x4a>;
-		irq-gpios = <&gpio0 16 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-	};
-};
-
-&spi1 {
-	compatible = "nordic,nrf-spi";
-	status = "okay";
-	pinctrl-0 = <&spi1_default>;
-	pinctrl-1 = <&spi1_sleep>;
-	pinctrl-names = "default", "sleep";
-	cs-gpios = <&gpio0 4 GPIO_ACTIVE_LOW>;
-
-	w25q01: w25q01jvzeim@0 {
-		compatible = "jedec,spi-nor";
-		reg = <0>;
-		spi-max-frequency = <100000000>;
-		size = <0x40000000>; // 1 GBit
-		has-dpd;
-		jedec-id = [ ef 70 21  ];
+		irq-gpios = <&gpio0 13 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 	};
 };
 
@@ -72,12 +57,12 @@
 	#address-cells = <1>;
 	#size-cells = <0>;
 
-	channel@4 {
-		reg = <4>;
+	channel@2 {
+		reg = <2>;
 		zephyr,gain = "ADC_GAIN_1_6";
 		zephyr,reference = "ADC_REF_INTERNAL";
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
-		zephyr,input-positive = <NRF_SAADC_AIN5>;
+		zephyr,input-positive = <NRF_SAADC_AIN2>;
 		zephyr,resolution = <12>;
 	};
 };

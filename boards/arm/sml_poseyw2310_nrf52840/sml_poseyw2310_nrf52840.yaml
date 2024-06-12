@@ -1,0 +1,19 @@
+identifier: sml_poseyw2310_nrf52840
+name: SML_POSEYW2310_NRF52840
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - adc
+  - ble
+  - counter
+  - gpio
+  - i2c
+  - spi
+  - watchdog
+  - nvs

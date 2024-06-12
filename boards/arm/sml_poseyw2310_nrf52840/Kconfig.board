@@ -1,0 +1,3 @@
+config BOARD_SML_POSEYW2310_NRF52840
+	bool "SML Posey-w2310"
+	depends on SOC_NRF52840_QIAA

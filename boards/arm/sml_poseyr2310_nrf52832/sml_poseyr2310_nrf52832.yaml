@@ -1,0 +1,16 @@
+identifier: sml_poseyr2310_nrf52832
+name: SML_POSEYR2310_NRF52832
+type: mcu
+arch: arm
+ram: 64
+flash: 512
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - adc
+  - gpio
+  - i2c
+  - watchdog
+  - nvs

@@ -1,0 +1,36 @@
+// To get started, press Ctrl+Space (or Option+Esc) to bring up the completion menu and view the available nodes.
+
+// You can also use the buttons in the sidebar to perform actions on nodes.
+// Actions currently available include:
+
+// * Enabling / disabling the node
+// * Adding the bus to a bus
+// * Removing the node
+// * Connecting ADC channels
+
+// For more help, browse the DeviceTree documentation at https: //docs.zephyrproject.org/latest/guides/dts/index.html
+// You can also visit the nRF DeviceTree extension documentation at https: //nrfconnect.github.io/vscode-nrf-connect/devicetree/nrfdevicetree.html
+
+/ {
+    zephyr,user {
+        imureset-gpios = <&gpio0 11 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+    };
+};
+
+// Needed for BNO08x driver config. Might need to trace exactly why...
+&gpio0 {
+    label = "gpio0";
+};
+
+&i2c0 {
+    compatible = "nordic,nrf-twi";
+    status = "okay";
+    clock-frequency = <100000>;
+
+    bno08x0: bno08x@4a {
+        compatible = "ceva,bno08x";
+        label = "imu";
+        reg = <0x4a>;
+        irq-gpios = <&gpio0 17 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+};
