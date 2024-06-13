@@ -1,0 +1,9 @@
+if BOARD_SML_POSEYR2405_NRF52832
+
+config BOARD
+	default "sml_poseyr2405_nrf52832"
+
+config BT_CTLR
+   default BT
+
+endif
