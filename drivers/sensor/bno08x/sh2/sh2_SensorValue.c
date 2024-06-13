@@ -2,7 +2,7 @@
  * Copyright 2015-21 CEVA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License and 
+ * you may not use this file except in compliance with the License and
  * any applicable agreements you may have with CEVA, Inc.
  * You may obtain a copy of the License at
  *
@@ -32,55 +32,96 @@ const float scaleRadToDeg = 180.0f / 3.14159265358f;
 // ------------------------------------------------------------------------
 // Forward declarations
 
-static int decodeRawAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeLinearAcceleration(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGravity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeRawGyroscope(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGyroscopeCalibrated(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGyroscopeUncal(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeRawMagnetometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeMagneticFieldCalibrated(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeMagneticFieldUncal(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGameRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGeomagneticRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodePressure(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeAmbientLight(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeHumidity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeProximity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeTemperature(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeReserved(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeTapDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeStepDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeStepCounter(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeSignificantMotion(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeStabilityClassifier(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeShakeDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeFlipDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodePickupDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeStabilityDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodePersonalActivityClassifier(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeSleepDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeTiltDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodePocketDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeCircleDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeHeartRateMonitor(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeArvrStabilizedRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeArvrStabilizedGRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeGyroIntegratedRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeIZroRequest(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeRawOptFlow(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeDeadReckoningPose(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
-static int decodeWheelEncoder(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event);
+static int decodeRawAccelerometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeAccelerometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeLinearAcceleration(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGravity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeRawGyroscope(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGyroscopeCalibrated(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGyroscopeUncal(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeRawMagnetometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeMagneticFieldCalibrated(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeMagneticFieldUncal(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGameRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGeomagneticRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodePressure(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeAmbientLight(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeHumidity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeProximity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeTemperature(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeReserved(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeTapDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeStepDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeStepCounter(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeSignificantMotion(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeStabilityClassifier(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeShakeDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeFlipDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodePickupDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeStabilityDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodePersonalActivityClassifier(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeSleepDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeTiltDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodePocketDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeCircleDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeHeartRateMonitor(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeArvrStabilizedRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeArvrStabilizedGRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeGyroIntegratedRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeIZroRequest(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeRawOptFlow(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeDeadReckoningPose(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
+static int decodeWheelEncoder(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event);
 
 // ------------------------------------------------------------------------
 // Public API
 
-int sh2_decodeSensorEvent(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
-    // Fill out fields of *value based on *event, converting data from message representation
-    // to natural representation.
+int sh2_decodeSensorEvent(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
+    // Fill out fields of *value based on *event, converting data from message
+    // representation to natural representation.
 
     int rc = SH2_OK;
 
@@ -90,15 +131,13 @@ int sh2_decodeSensorEvent(sh2_SensorValue_t *value, const sh2_SensorEvent_t *eve
     if (value->sensorId != SH2_GYRO_INTEGRATED_RV) {
         value->sequence = event->report[1];
         value->status = event->report[2] & 0x03;
-    }
-    else {
+    } else {
         value->sequence = 0;
         value->status = 0;
     }
 
     // extract delay field (100uS units)
-    
-    
+
     switch (value->sensorId) {
         case SH2_RAW_ACCELEROMETER:
             rc = decodeRawAccelerometer(value, event);
@@ -235,8 +274,8 @@ int sh2_decodeSensorEvent(sh2_SensorValue_t *value, const sh2_SensorEvent_t *eve
 // ------------------------------------------------------------------------
 // Private utility functions
 
-static int decodeRawAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeRawAccelerometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.rawAccelerometer.x = read16(&event->report[4]);
     value->un.rawAccelerometer.y = read16(&event->report[6]);
     value->un.rawAccelerometer.z = read16(&event->report[8]);
@@ -245,8 +284,8 @@ static int decodeRawAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEven
     return SH2_OK;
 }
 
-static int decodeAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeAccelerometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.accelerometer.x = read16(&event->report[4]) * SCALE_Q(8);
     value->un.accelerometer.y = read16(&event->report[6]) * SCALE_Q(8);
     value->un.accelerometer.z = read16(&event->report[8]) * SCALE_Q(8);
@@ -254,8 +293,8 @@ static int decodeAccelerometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t
     return SH2_OK;
 }
 
-static int decodeLinearAcceleration(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeLinearAcceleration(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.linearAcceleration.x = read16(&event->report[4]) * SCALE_Q(8);
     value->un.linearAcceleration.y = read16(&event->report[6]) * SCALE_Q(8);
     value->un.linearAcceleration.z = read16(&event->report[8]) * SCALE_Q(8);
@@ -263,8 +302,8 @@ static int decodeLinearAcceleration(sh2_SensorValue_t *value, const sh2_SensorEv
     return SH2_OK;
 }
 
-static int decodeGravity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGravity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.gravity.x = read16(&event->report[4]) * SCALE_Q(8);
     value->un.gravity.y = read16(&event->report[6]) * SCALE_Q(8);
     value->un.gravity.z = read16(&event->report[8]) * SCALE_Q(8);
@@ -272,8 +311,8 @@ static int decodeGravity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *even
     return SH2_OK;
 }
 
-static int decodeRawGyroscope(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeRawGyroscope(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.rawGyroscope.x = read16(&event->report[4]);
     value->un.rawGyroscope.y = read16(&event->report[6]);
     value->un.rawGyroscope.z = read16(&event->report[8]);
@@ -283,8 +322,8 @@ static int decodeRawGyroscope(sh2_SensorValue_t *value, const sh2_SensorEvent_t 
     return SH2_OK;
 }
 
-static int decodeGyroscopeCalibrated(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGyroscopeCalibrated(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.gyroscope.x = read16(&event->report[4]) * SCALE_Q(9);
     value->un.gyroscope.y = read16(&event->report[6]) * SCALE_Q(9);
     value->un.gyroscope.z = read16(&event->report[8]) * SCALE_Q(9);
@@ -292,8 +331,8 @@ static int decodeGyroscopeCalibrated(sh2_SensorValue_t *value, const sh2_SensorE
     return SH2_OK;
 }
 
-static int decodeGyroscopeUncal(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGyroscopeUncal(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.gyroscopeUncal.x = read16(&event->report[4]) * SCALE_Q(9);
     value->un.gyroscopeUncal.y = read16(&event->report[6]) * SCALE_Q(9);
     value->un.gyroscopeUncal.z = read16(&event->report[8]) * SCALE_Q(9);
@@ -305,8 +344,8 @@ static int decodeGyroscopeUncal(sh2_SensorValue_t *value, const sh2_SensorEvent_
     return SH2_OK;
 }
 
-static int decodeRawMagnetometer(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeRawMagnetometer(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.rawMagnetometer.x = read16(&event->report[4]);
     value->un.rawMagnetometer.y = read16(&event->report[6]);
     value->un.rawMagnetometer.z = read16(&event->report[8]);
@@ -315,8 +354,8 @@ static int decodeRawMagnetometer(sh2_SensorValue_t *value, const sh2_SensorEvent
     return SH2_OK;
 }
 
-static int decodeMagneticFieldCalibrated(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeMagneticFieldCalibrated(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.magneticField.x = read16(&event->report[4]) * SCALE_Q(4);
     value->un.magneticField.y = read16(&event->report[6]) * SCALE_Q(4);
     value->un.magneticField.z = read16(&event->report[8]) * SCALE_Q(4);
@@ -324,217 +363,227 @@ static int decodeMagneticFieldCalibrated(sh2_SensorValue_t *value, const sh2_Sen
     return SH2_OK;
 }
 
-static int decodeMagneticFieldUncal(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeMagneticFieldUncal(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.magneticFieldUncal.x = read16(&event->report[4]) * SCALE_Q(4);
     value->un.magneticFieldUncal.y = read16(&event->report[6]) * SCALE_Q(4);
     value->un.magneticFieldUncal.z = read16(&event->report[8]) * SCALE_Q(4);
 
-    value->un.magneticFieldUncal.biasX = read16(&event->report[10]) * SCALE_Q(4);
-    value->un.magneticFieldUncal.biasY = read16(&event->report[12]) * SCALE_Q(4);
-    value->un.magneticFieldUncal.biasZ = read16(&event->report[14]) * SCALE_Q(4);
+    value->un.magneticFieldUncal.biasX =
+        read16(&event->report[10]) * SCALE_Q(4);
+    value->un.magneticFieldUncal.biasY =
+        read16(&event->report[12]) * SCALE_Q(4);
+    value->un.magneticFieldUncal.biasZ =
+        read16(&event->report[14]) * SCALE_Q(4);
 
     return SH2_OK;
 }
 
-static int decodeRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.rotationVector.i = read16(&event->report[4]) * SCALE_Q(14);
     value->un.rotationVector.j = read16(&event->report[6]) * SCALE_Q(14);
     value->un.rotationVector.k = read16(&event->report[8]) * SCALE_Q(14);
     value->un.rotationVector.real = read16(&event->report[10]) * SCALE_Q(14);
-    value->un.rotationVector.accuracy = read16(&event->report[12]) * SCALE_Q(12);
+    value->un.rotationVector.accuracy =
+        read16(&event->report[12]) * SCALE_Q(12);
 
     return SH2_OK;
 }
 
-static int decodeGameRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGameRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.gameRotationVector.i = read16(&event->report[4]) * SCALE_Q(14);
     value->un.gameRotationVector.j = read16(&event->report[6]) * SCALE_Q(14);
     value->un.gameRotationVector.k = read16(&event->report[8]) * SCALE_Q(14);
-    value->un.gameRotationVector.real = read16(&event->report[10]) * SCALE_Q(14);
+    value->un.gameRotationVector.real =
+        read16(&event->report[10]) * SCALE_Q(14);
 
     return SH2_OK;
 }
 
-static int decodeGeomagneticRotationVector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGeomagneticRotationVector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.geoMagRotationVector.i = read16(&event->report[4]) * SCALE_Q(14);
     value->un.geoMagRotationVector.j = read16(&event->report[6]) * SCALE_Q(14);
     value->un.geoMagRotationVector.k = read16(&event->report[8]) * SCALE_Q(14);
-    value->un.geoMagRotationVector.real = read16(&event->report[10]) * SCALE_Q(14);
-    value->un.geoMagRotationVector.accuracy = read16(&event->report[12]) * SCALE_Q(12);
+    value->un.geoMagRotationVector.real =
+        read16(&event->report[10]) * SCALE_Q(14);
+    value->un.geoMagRotationVector.accuracy =
+        read16(&event->report[12]) * SCALE_Q(12);
 
     return SH2_OK;
 }
 
-static int decodePressure(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodePressure(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.pressure.value = read32(&event->report[4]) * SCALE_Q(20);
 
     return SH2_OK;
 }
 
-static int decodeAmbientLight(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeAmbientLight(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.ambientLight.value = read32(&event->report[4]) * SCALE_Q(8);
 
     return SH2_OK;
 }
 
-static int decodeHumidity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeHumidity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.humidity.value = read16(&event->report[4]) * SCALE_Q(8);
 
     return SH2_OK;
 }
 
-static int decodeProximity(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeProximity(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.proximity.value = read16(&event->report[4]) * SCALE_Q(4);
 
     return SH2_OK;
 }
 
-static int decodeTemperature(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeTemperature(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.temperature.value = read16(&event->report[4]) * SCALE_Q(7);
 
     return SH2_OK;
 }
 
-static int decodeReserved(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeReserved(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.reserved.tbd = read16(&event->report[4]) * SCALE_Q(7);
 
     return SH2_OK;
 }
 
-static int decodeTapDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeTapDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.tapDetector.flags = event->report[4];
 
     return SH2_OK;
 }
 
-static int decodeStepDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeStepDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.stepDetector.latency = readu32(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeStepCounter(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeStepCounter(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.stepCounter.latency = readu32(&event->report[4]);
     value->un.stepCounter.steps = readu32(&event->report[8]);
 
     return SH2_OK;
 }
 
-static int decodeSignificantMotion(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeSignificantMotion(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.sigMotion.motion = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeStabilityClassifier(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeStabilityClassifier(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.stabilityClassifier.classification = event->report[4];
 
     return SH2_OK;
 }
 
-static int decodeShakeDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeShakeDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.shakeDetector.shake = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeFlipDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeFlipDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.flipDetector.flip = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodePickupDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodePickupDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.pickupDetector.pickup = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeStabilityDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeStabilityDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.stabilityDetector.stability = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodePersonalActivityClassifier(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodePersonalActivityClassifier(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.personalActivityClassifier.page = event->report[4] & 0x7F;
-    value->un.personalActivityClassifier.lastPage = ((event->report[4] & 0x80) != 0);
+    value->un.personalActivityClassifier.lastPage =
+        ((event->report[4] & 0x80) != 0);
     value->un.personalActivityClassifier.mostLikelyState = event->report[5];
     for (int n = 0; n < 10; n++) {
-        value->un.personalActivityClassifier.confidence[n] = event->report[6+n];
+        value->un.personalActivityClassifier.confidence[n] =
+            event->report[6 + n];
     }
-    
+
     return SH2_OK;
 }
 
-static int decodeSleepDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeSleepDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.sleepDetector.sleepState = event->report[4];
 
     return SH2_OK;
 }
 
-static int decodeTiltDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeTiltDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.tiltDetector.tilt = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodePocketDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodePocketDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.pocketDetector.pocket = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeCircleDetector(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeCircleDetector(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.circleDetector.circle = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeHeartRateMonitor(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeHeartRateMonitor(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.heartRateMonitor.heartRate = readu16(&event->report[4]);
 
     return SH2_OK;
 }
 
-static int decodeArvrStabilizedRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeArvrStabilizedRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.arvrStabilizedRV.i = read16(&event->report[4]) * SCALE_Q(14);
     value->un.arvrStabilizedRV.j = read16(&event->report[6]) * SCALE_Q(14);
     value->un.arvrStabilizedRV.k = read16(&event->report[8]) * SCALE_Q(14);
     value->un.arvrStabilizedRV.real = read16(&event->report[10]) * SCALE_Q(14);
-    value->un.arvrStabilizedRV.accuracy = read16(&event->report[12]) * SCALE_Q(12);
+    value->un.arvrStabilizedRV.accuracy =
+        read16(&event->report[12]) * SCALE_Q(12);
 
     return SH2_OK;
 }
 
-static int decodeArvrStabilizedGRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeArvrStabilizedGRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.arvrStabilizedGRV.i = read16(&event->report[4]) * SCALE_Q(14);
     value->un.arvrStabilizedGRV.j = read16(&event->report[6]) * SCALE_Q(14);
     value->un.arvrStabilizedGRV.k = read16(&event->report[8]) * SCALE_Q(14);
@@ -543,29 +592,32 @@ static int decodeArvrStabilizedGRV(sh2_SensorValue_t *value, const sh2_SensorEve
     return SH2_OK;
 }
 
-static int decodeGyroIntegratedRV(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeGyroIntegratedRV(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.gyroIntegratedRV.i = read16(&event->report[0]) * SCALE_Q(14);
     value->un.gyroIntegratedRV.j = read16(&event->report[2]) * SCALE_Q(14);
     value->un.gyroIntegratedRV.k = read16(&event->report[4]) * SCALE_Q(14);
     value->un.gyroIntegratedRV.real = read16(&event->report[6]) * SCALE_Q(14);
-    value->un.gyroIntegratedRV.angVelX = read16(&event->report[8]) * SCALE_Q(10);
-    value->un.gyroIntegratedRV.angVelY = read16(&event->report[10]) * SCALE_Q(10);
-    value->un.gyroIntegratedRV.angVelZ = read16(&event->report[12]) * SCALE_Q(10);
+    value->un.gyroIntegratedRV.angVelX =
+        read16(&event->report[8]) * SCALE_Q(10);
+    value->un.gyroIntegratedRV.angVelY =
+        read16(&event->report[10]) * SCALE_Q(10);
+    value->un.gyroIntegratedRV.angVelZ =
+        read16(&event->report[12]) * SCALE_Q(10);
 
     return SH2_OK;
 }
 
-static int decodeIZroRequest(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeIZroRequest(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.izroRequest.intent = (sh2_IZroMotionIntent_t)event->report[4];
     value->un.izroRequest.request = (sh2_IZroMotionRequest_t)event->report[5];
 
     return SH2_OK;
 }
 
-static int decodeRawOptFlow(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event)
-{
+static int decodeRawOptFlow(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     // Decode Raw optical flow
     value->un.rawOptFlow.dx = read16(&event->report[4]);
     value->un.rawOptFlow.dy = read16(&event->report[6]);
@@ -579,32 +631,43 @@ static int decodeRawOptFlow(sh2_SensorValue_t *value, const sh2_SensorEvent_t *e
     value->un.rawOptFlow.laserOn = read8(&event->report[16]);
     value->un.rawOptFlow.dt = read16(&event->report[18]);
     value->un.rawOptFlow.timestamp = read32(&event->report[20]);
-    
+
     return SH2_OK;
 }
 
-static int decodeDeadReckoningPose(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event){
+static int decodeDeadReckoningPose(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.deadReckoningPose.timestamp = read32(&event->report[4]);
-    value->un.deadReckoningPose.linPosX = read32(&event->report[8]) * SCALE_Q(17);
-    value->un.deadReckoningPose.linPosY = read32(&event->report[12]) * SCALE_Q(17);
-    value->un.deadReckoningPose.linPosZ = read32(&event->report[16]) * SCALE_Q(17);
+    value->un.deadReckoningPose.linPosX =
+        read32(&event->report[8]) * SCALE_Q(17);
+    value->un.deadReckoningPose.linPosY =
+        read32(&event->report[12]) * SCALE_Q(17);
+    value->un.deadReckoningPose.linPosZ =
+        read32(&event->report[16]) * SCALE_Q(17);
 
     value->un.deadReckoningPose.i = read32(&event->report[20]) * SCALE_Q(30);
     value->un.deadReckoningPose.j = read32(&event->report[24]) * SCALE_Q(30);
     value->un.deadReckoningPose.k = read32(&event->report[28]) * SCALE_Q(30);
     value->un.deadReckoningPose.real = read32(&event->report[32]) * SCALE_Q(30);
 
-    value->un.deadReckoningPose.linVelX = read32(&event->report[36]) * SCALE_Q(25);
-    value->un.deadReckoningPose.linVelY = read32(&event->report[40]) * SCALE_Q(25);
-    value->un.deadReckoningPose.linVelZ = read32(&event->report[44]) * SCALE_Q(25);
+    value->un.deadReckoningPose.linVelX =
+        read32(&event->report[36]) * SCALE_Q(25);
+    value->un.deadReckoningPose.linVelY =
+        read32(&event->report[40]) * SCALE_Q(25);
+    value->un.deadReckoningPose.linVelZ =
+        read32(&event->report[44]) * SCALE_Q(25);
 
-    value->un.deadReckoningPose.angVelX = read32(&event->report[48]) * SCALE_Q(25);
-    value->un.deadReckoningPose.angVelY = read32(&event->report[52]) * SCALE_Q(25);
-    value->un.deadReckoningPose.angVelZ = read32(&event->report[56]) * SCALE_Q(25);
+    value->un.deadReckoningPose.angVelX =
+        read32(&event->report[48]) * SCALE_Q(25);
+    value->un.deadReckoningPose.angVelY =
+        read32(&event->report[52]) * SCALE_Q(25);
+    value->un.deadReckoningPose.angVelZ =
+        read32(&event->report[56]) * SCALE_Q(25);
     return SH2_OK;
 }
 
-static int decodeWheelEncoder(sh2_SensorValue_t *value, const sh2_SensorEvent_t *event){
+static int decodeWheelEncoder(
+    sh2_SensorValue_t* value, const sh2_SensorEvent_t* event) {
     value->un.wheelEncoder.timestamp = read32(&event->report[4]);
     value->un.wheelEncoder.wheelIndex = read8(&event->report[8]);
     value->un.wheelEncoder.dataType = read8(&event->report[9]);

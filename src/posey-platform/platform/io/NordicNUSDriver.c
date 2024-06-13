@@ -21,7 +21,7 @@
 // #include <memfault/core/trace_event.h>
 
 #ifdef CONFIG_ROLE_HUB
-#include <bluetooth/scan.h>
+    #include <bluetooth/scan.h>
 #endif
 
 #include <stdio.h>
@@ -42,9 +42,9 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL_INF);
 ****/
 
 #if defined(CONFIG_ROLE_HUB)
-#define MaxSensors 3
-#define MaxConnections (MaxSensors + 1)
-#define PCConnection (MaxConnections - 1)
+    #define MaxSensors 3
+    #define MaxConnections (MaxSensors + 1)
+    #define PCConnection (MaxConnections - 1)
 
 // ATW: Fix this.
 static const char* names[MaxConnections] = {
@@ -58,9 +58,9 @@ static struct bt_conn* connections[MaxConnections] = {NULL, NULL, NULL, NULL};
 static uint32_t throughput[MaxConnections] = {0, 0, 0, 0};
 static uint32_t last_update[MaxConnections] = {0, 0, 0, 0};
 #else
-#define MaxSensors 0
-#define MaxConnections (MaxSensors + 1)
-#define PCConnection (MaxConnections - 1)
+    #define MaxSensors 0
+    #define MaxConnections (MaxSensors + 1)
+    #define PCConnection (MaxConnections - 1)
 
 static char* names[MaxConnections] = {
     "<PC>"  // PC connection.
@@ -361,8 +361,7 @@ static void scan_connecting_error(struct bt_scan_device_info* device_info) {
 }
 
 static void scan_connecting(
-    struct bt_scan_device_info* device_info,
-    struct bt_conn* conn) {
+    struct bt_scan_device_info* device_info, struct bt_conn* conn) {
     LOG_INF("scan_connecting");
     scan_conn = conn;
 }
@@ -375,7 +374,7 @@ BT_SCAN_CB_INIT(
     scan_connecting);
 
 static int scan_start() {
-#if defined(CONFIG_ROLE_HUB)
+    #if defined(CONFIG_ROLE_HUB)
 
     scan_stop();
     if (!scanning_enabled)
@@ -432,7 +431,7 @@ static int scan_start() {
         return err;
     }
 
-#endif
+    #endif
 
     return 0;
 }
@@ -489,9 +488,7 @@ static void gatt_discover(const int id) {
 }
 
 static void exchange_func(
-    struct bt_conn* conn,
-    uint8_t err,
-    struct bt_gatt_exchange_params* params) {
+    struct bt_conn* conn, uint8_t err, struct bt_gatt_exchange_params* params) {
     if (!err)
         LOG_INF("MTU exchange done");
     else
@@ -674,16 +671,14 @@ static void le_param_updated(
 }
 
 static void le_phy_updated(
-    struct bt_conn* conn,
-    struct bt_conn_le_phy_info* param) {
+    struct bt_conn* conn, struct bt_conn_le_phy_info* param) {
     LOG_INF(
         "LE PHY updated: TX PHY %s, RX PHY %s", phy2str(param->tx_phy),
         phy2str(param->rx_phy));
 }
 
 static void le_data_length_updated(
-    struct bt_conn* conn,
-    struct bt_conn_le_data_len_info* info) {
+    struct bt_conn* conn, struct bt_conn_le_data_len_info* info) {
     if (!data_length_req) {
         return;
     }
@@ -740,8 +735,7 @@ static struct bt_conn_auth_cb conn_auth_callbacks = {
 };
 
 static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
-    .pairing_complete = pairing_complete,
-    .pairing_failed = pairing_failed};
+    .pairing_complete = pairing_complete, .pairing_failed = pairing_failed};
 
 /***
 ****      NUS
@@ -749,9 +743,7 @@ static struct bt_conn_auth_info_cb conn_auth_info_callbacks = {
 
 #if defined(CONFIG_ROLE_HUB)
 static uint8_t bt_nus_sensor_received(
-    struct bt_nus_client* nus,
-    const uint8_t* data,
-    uint16_t len) {
+    struct bt_nus_client* nus, const uint8_t* data, uint16_t len) {
     char addr[BT_ADDR_LE_STR_LEN] = {0};
 
     bt_addr_le_to_str(bt_conn_get_dst(nus->conn), addr, ARRAY_SIZE(addr));
@@ -777,9 +769,9 @@ static uint8_t bt_nus_sensor_received(
         "Received %d bytes from SENSOR %s (slot %d, addr %s).", len, name, slot,
         addr);
 
-#if defined(CONFIG_ROLE_HUB)
+    #if defined(CONFIG_ROLE_HUB)
     process_data(nus->conn, slot, data, len);
-#endif
+    #endif
 
     return BT_GATT_ITER_CONTINUE;
 }

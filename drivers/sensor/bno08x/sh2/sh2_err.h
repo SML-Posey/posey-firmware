@@ -2,7 +2,7 @@
  * Copyright 2015-21 CEVA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License and 
+ * you may not use this file except in compliance with the License and
  * any applicable agreements you may have with CEVA, Inc.
  * You may obtain a copy of the License at
  *
@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-/** 
+/**
  * @file sh2_err.h
  * @author David Wheeler
  * @date 22 May 2015
  * @brief Type definitions for the SH2 API.
  *
  * Struct and type definitions supporting the SH2 SensorHub API.
- * 
+ *
  */
-
 
 #ifndef SH2_ERR_H
 #define SH2_ERR_H
 
-
-#define SH2_OK                 (0)  /**< Success */
-#define SH2_ERR                (-1) /**< General Error */
-#define SH2_ERR_BAD_PARAM      (-2) /**< Bad parameter to an API call */
+#define SH2_OK (0)                  /**< Success */
+#define SH2_ERR (-1)                /**< General Error */
+#define SH2_ERR_BAD_PARAM (-2)      /**< Bad parameter to an API call */
 #define SH2_ERR_OP_IN_PROGRESS (-3) /**< Operation in progress */
-#define SH2_ERR_IO             (-4) /**< Error communicating with hub */
-#define SH2_ERR_HUB            (-5) /**< Error reported by hub */
-#define SH2_ERR_TIMEOUT        (-6) /**< Operation timed out */
-
+#define SH2_ERR_IO (-4)             /**< Error communicating with hub */
+#define SH2_ERR_HUB (-5)            /**< Error reported by hub */
+#define SH2_ERR_TIMEOUT (-6)        /**< Operation timed out */
 
 #endif

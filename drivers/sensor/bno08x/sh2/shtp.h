@@ -2,7 +2,7 @@
  * Copyright 2015-21 CEVA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License and 
+ * you may not use this file except in compliance with the License and
  * any applicable agreements you may have with CEVA, Inc.
  * You may obtain a copy of the License at
  *
@@ -22,8 +22,8 @@
 #ifndef SHTP_H
 #define SHTP_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "sh2_hal.h"
 
@@ -37,34 +37,34 @@ typedef enum shtp_Event_e {
     SHTP_INTERRUPTED_PAYLOAD = 7,
 } shtp_Event_t;
 
-typedef void shtp_Callback_t(void * cookie, uint8_t *payload, uint16_t len, uint32_t timestamp);
-typedef void shtp_EventCallback_t(void *cookie, shtp_Event_t shtpEvent);
+typedef void shtp_Callback_t(
+    void* cookie, uint8_t* payload, uint16_t len, uint32_t timestamp);
+typedef void shtp_EventCallback_t(void* cookie, shtp_Event_t shtpEvent);
 
 // Open the SHTP communications session.
 // Takes a pointer to a HAL, which will be opened by this function.
-// Returns a pointer referencing the open SHTP session.  (Pass this as pInstance to later calls.)
-void * shtp_open(sh2_Hal_t *pHal);
+// Returns a pointer referencing the open SHTP session.  (Pass this as pInstance
+// to later calls.)
+void* shtp_open(sh2_Hal_t* pHal);
 
 // Closes and SHTP session.
 // The associated HAL will be closed.
-void shtp_close(void *pShtp);
+void shtp_close(void* pShtp);
 
 // Set the callback function for reporting SHTP asynchronous events
-void shtp_setEventCallback(void *pInstance,
-                           shtp_EventCallback_t * eventCallback, 
-                           void *eventCookie);
+void shtp_setEventCallback(
+    void* pInstance, shtp_EventCallback_t* eventCallback, void* eventCookie);
 
 // Register a listener for an SHTP channel
-int shtp_listenChan(void *pShtp,
-                    uint8_t channel,
-                    shtp_Callback_t *callback, void * cookie);
+int shtp_listenChan(
+    void* pShtp, uint8_t channel, shtp_Callback_t* callback, void* cookie);
 
 // Send an SHTP payload on a particular channel
-int shtp_send(void *pShtp,
-              uint8_t channel, const uint8_t *payload, uint16_t len);
+int shtp_send(
+    void* pShtp, uint8_t channel, const uint8_t* payload, uint16_t len);
 
 // Check for received data and process it.
-void shtp_service(void *pShtp);
+void shtp_service(void* pShtp);
 
 // #ifdef SHTP_H
 #endif

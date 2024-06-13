@@ -528,10 +528,11 @@ static int bno08x_init(const struct device* dev) {
         inst, bno08x_init, NULL, &bno08x_data_##inst, &bno08x_config_##inst, \
         POST_KERNEL, CONFIG_SENSOR_INIT_PRIORITY, &bno08x_driver_api);
 
-#define BNO08x_CONFIG_I2C(inst)                                         \
-    {                                                                   \
-        .bus_init = bno08x_i2c_init,                                    \
-        .bus_cfg.i2c = I2C_DT_SPEC_INST_GET(inst), BNO08x_CFG_IRQ(inst) \
+#define BNO08x_CONFIG_I2C(inst)                    \
+    {                                              \
+        .bus_init = bno08x_i2c_init,               \
+        .bus_cfg.i2c = I2C_DT_SPEC_INST_GET(inst), \
+        BNO08x_CFG_IRQ(inst),                      \
     }
 
 #define BNO08x_DEFINE_I2C(inst)                              \

@@ -1,17 +1,13 @@
-#include "platform.hpp"
 #include "posey-platform/platform/sensors/IMU_Stub.hpp"
+#include "platform.hpp"
 
-IMU_Stub::IMU_Stub()
-{
-}
+IMU_Stub::IMU_Stub() {}
 
-bool IMU_Stub::setup()
-{
+bool IMU_Stub::setup() {
     return true;
 }
 
-bool IMU_Stub::collect()
-{
+bool IMU_Stub::collect() {
     data.time_ms = Clock::get_msec<uint32_t>();
 
     static float Ax = 0;

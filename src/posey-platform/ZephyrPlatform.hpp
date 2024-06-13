@@ -12,10 +12,7 @@
 
 using Clock = ZephyrClock;
 
-typedef BaseRateLimiter<
-    Clock,
-    unsigned long,
-    float> RateLimiter;
+typedef BaseRateLimiter<Clock, unsigned long, float> RateLimiter;
 
 typedef BaseRateTask<RateLimiter> RateTask;
 
@@ -26,25 +23,24 @@ extern NordicNUSReader reader;
 extern NordicNUSWriter writer;
 
 #ifdef CONFIG_BNO08x
-#include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
+    #include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 extern IMU_BNO08x imu;
 #else
-#include "posey-platform/platform/sensors/IMU_Stub.hpp"
+    #include "posey-platform/platform/sensors/IMU_Stub.hpp"
 extern IMU_Stub imu;
 #endif
 
-
 #if defined(CONFIG_ROLE_HUB)
-#include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
+    #include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 extern BLE_Zephyr ble;
 
-#include "tasks/TaskWaist.hpp"
+    #include "tasks/TaskWaist.hpp"
 #elif defined(CONFIG_ROLE_WATCH)
-#include "tasks/TaskWatch.hpp"
+    #include "tasks/TaskWatch.hpp"
 #elif defined(CONFIG_ROLE_RING)
-#include "tasks/TaskRing.hpp"
+    #include "tasks/TaskRing.hpp"
 #else
-#error "No valid role defined!"
+    #error "No valid role defined!"
 #endif
 
 bool init_platform();

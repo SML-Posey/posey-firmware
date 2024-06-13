@@ -12,4 +12,3 @@
 		zephyr,code-partition = &slot0_ns_partition;
 	};
 };
-

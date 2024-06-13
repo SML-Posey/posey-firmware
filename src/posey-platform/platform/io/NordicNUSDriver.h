@@ -14,7 +14,7 @@ void enable_scanning();
 void disable_scanning();
 
 #ifdef CONFIG_ROLE_HUB
-int8_t read_conn_rssi(struct bt_conn * conn);
+int8_t read_conn_rssi(struct bt_conn* conn);
 
 bool init_flash();
 bool erase_flash(const uint32_t size);
@@ -30,29 +30,24 @@ void stop_flash_logging();
 
 uint32_t flash_log_size();
 
-uint16_t read_flash(
-    const uint32_t offset,
-    uint8_t * data,
-    uint16_t size);
+uint16_t read_flash(const uint32_t offset, uint8_t* data, uint16_t size);
 
 void process_data(
-    struct bt_conn * conn,
+    struct bt_conn* conn,
     const uint8_t slot,
-    const uint8_t * data,
+    const uint8_t* data,
     const uint16_t size);
 
 void BLE_Zephyr_callback(
-	const bt_addr_le_t *addr,
-	int8_t rssi,
-	uint8_t type,
-	struct net_buf_simple *ad);
+    const bt_addr_le_t* addr,
+    int8_t rssi,
+    uint8_t type,
+    struct net_buf_simple* ad);
 
 void bt_nus_pc_received(
-	struct bt_conn *conn,
-	const uint8_t *data,
-    uint16_t len);
+    struct bt_conn* conn, const uint8_t* data, uint16_t len);
 
-struct bt_conn * get_pc_connection();
+struct bt_conn* get_pc_connection();
 #endif
 
 #ifdef __cplusplus
