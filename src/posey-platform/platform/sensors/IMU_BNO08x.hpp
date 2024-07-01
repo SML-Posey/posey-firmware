@@ -5,8 +5,6 @@
 
 #include "platform/sensors/BaseIMU.hpp"
 
-#include "bno08x.h"
-
 class IMU_BNO08x : public BaseIMU {
     public:
         IMU_BNO08x();
@@ -16,5 +14,4 @@ class IMU_BNO08x : public BaseIMU {
 
     private:
         const device* _dev = nullptr;
-        bno08x_data* _data = nullptr;
 };

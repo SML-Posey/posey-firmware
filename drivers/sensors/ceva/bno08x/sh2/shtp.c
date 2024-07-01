@@ -238,6 +238,9 @@ static void rxAssemble(
         }
     }
 
+    // Remember next sequence number we expect for this channel.
+    pShtp->chan[chan].nextInSeq = seq + 1;
+
     if (pShtp->inRemaining == 0) {
         if (payloadLen > sizeof(pShtp->inPayload)) {
             // Error: This payload won't fit! Discard it.
@@ -247,6 +250,7 @@ static void rxAssemble(
                 pShtp->eventCallback(
                     pShtp->eventCookie, SHTP_TOO_LARGE_PAYLOADS);
             }
+
             return;
         }
 
@@ -280,9 +284,6 @@ static void rxAssemble(
                 pShtp->inTimestamp);
         }
     }
-
-    // Remember next sequence number we expect for this channel.
-    pShtp->chan[chan].nextInSeq = seq + 1;
 }
 
 // ------------------------------------------------------------------------
@@ -386,7 +387,7 @@ void shtp_service(void* pInstance) {
 
     int len = pShtp->pHal->read(
         pShtp->pHal, pShtp->inTransfer, sizeof(pShtp->inTransfer), &t_us);
-    if (len) {
+    if (len > 0) {
         rxAssemble(pShtp, pShtp->inTransfer, len, t_us);
     }
 }

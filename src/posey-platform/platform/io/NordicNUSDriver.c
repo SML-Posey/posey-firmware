@@ -66,8 +66,8 @@ static char* names[MaxConnections] = {
     "<PC>"  // PC connection.
 };
 static struct bt_conn* connections[MaxConnections] = {NULL};
-static uint32_t throughput[MaxConnections] = {0};
-static uint32_t last_update[MaxConnections] = {0};
+// static uint32_t throughput[MaxConnections] = {0};
+// static uint32_t last_update[MaxConnections] = {0};
 #endif
 
 int num_connected_sensors() {
@@ -123,11 +123,9 @@ static struct bt_nus_client nus_clients[MaxSensors];
 static char scan_name[30];
 static struct bt_conn* scan_conn = NULL;
 
-static struct bt_data ad[2] = {
+static struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN),
-    BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_MDS_VAL),
-};
+    BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN)};
 
 static const struct bt_data sd[] = {
     BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL),
@@ -500,7 +498,6 @@ static void exchange_func(
 
 static void connected(struct bt_conn* conn, uint8_t conn_err) {
     char addr[BT_ADDR_LE_STR_LEN];
-    int err;
 
     LOG_INF("NordicNUSDriver::connected");
 
@@ -551,12 +548,12 @@ static void connected(struct bt_conn* conn, uint8_t conn_err) {
         }
     }
 
+#ifdef CONFIG_ROLE_HUB
+    int err;
     int sensor_connections = num_connected_sensors();
 
     // Exchange MTU config.
     static struct bt_gatt_exchange_params exchange_params;
-
-#ifdef CONFIG_ROLE_HUB
     exchange_params.func = exchange_func;
     err = bt_gatt_exchange_mtu(conn, &exchange_params);
 
@@ -579,7 +576,6 @@ static void connected(struct bt_conn* conn, uint8_t conn_err) {
 
 static void disconnected(struct bt_conn* conn, uint8_t reason) {
     char addr[BT_ADDR_LE_STR_LEN];
-    int err;
 
     LOG_INF("NordicNUSDriver::disconnected");
     bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
@@ -639,6 +635,7 @@ static void disconnected(struct bt_conn* conn, uint8_t reason) {
     }
 
 #ifdef CONFIG_ROLE_HUB
+    int err;
     LOG_INF("%d of %d sensors connected.", sensor_connections, MaxSensors);
 
     // Restart active scanning if necessary.
@@ -777,10 +774,10 @@ static uint8_t bt_nus_sensor_received(
 }
 #endif
 
+#if defined(CONFIG_ROLE_HUB)
 static int nus_client_init(void) {
     int err = 0;
 
-#if defined(CONFIG_ROLE_HUB)
     LOG_INF("NordicNUSDriver::nus_client_init");
     struct bt_nus_client_init_param sensor_init = {
         .cb = {.received = bt_nus_sensor_received}};
@@ -803,9 +800,6 @@ static int nus_client_init(void) {
     // just ignore it.
     struct bt_nus_cb nus_cb = {.received = bt_nus_pc_received};
     err = bt_nus_init(&nus_cb);
-#else
-    err = bt_nus_init(NULL);
-#endif
     if (err) {
         LOG_ERR(
             "bt_nus_init: Failed to initialize UART service (err: %d, %s)", err,
@@ -816,6 +810,7 @@ static int nus_client_init(void) {
     LOG_INF("NUS Clients module initialized");
     return err;
 }
+#endif
 
 int init_nus() {
     int err = 0;

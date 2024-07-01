@@ -22,7 +22,7 @@ typedef BaseRateTask<RateLimiter> RateTask;
 extern NordicNUSReader reader;
 extern NordicNUSWriter writer;
 
-#ifdef CONFIG_BNO08x
+#ifdef CONFIG_BNO08X
     #include "posey-platform/platform/sensors/IMU_BNO08x.hpp"
 extern IMU_BNO08x imu;
 #else

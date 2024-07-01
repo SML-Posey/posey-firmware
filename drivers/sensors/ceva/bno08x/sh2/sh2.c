@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2021 CEVA, Inc.
+ * Copyright 2015-2022 CEVA, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License and
@@ -201,11 +201,13 @@ typedef struct sh2_s sh2_t;
 
 typedef int(sh2_OpStart_t)(sh2_t* pSh2);
 typedef void(sh2_OpRx_t)(sh2_t* pSh2, const uint8_t* payload, uint16_t len);
+typedef void(sh2_OpReset_t)(sh2_t* pSh2);
 
 typedef struct sh2_Op_s {
         uint32_t timeout_us;
         sh2_OpStart_t* start;
         sh2_OpRx_t* rx;
+        sh2_OpReset_t* onReset;
 } sh2_Op_t;
 
 // Parameters and state information for the operation in progress
@@ -404,7 +406,7 @@ typedef PACKED_STRUCT {
 FrsReadReq_t;
 
 // Get Datalen portion of len_status field
-#define FRS_READ_DATALEN(x) ((x >> 4) & 0x0F)
+#define FRS_READ_DATALEN(x) (((x) >> 4) & 0x0F)
 
 // Get status portion of len_status field
 #define FRS_READ_STATUS(x) ((x) & 0x0F)
@@ -527,6 +529,28 @@ static void opRx(sh2_t* pSh2, const uint8_t* payload, uint16_t len) {
     }
 }
 
+static int opCompleted(sh2_t* pSh2, int status) {
+    // Record status
+    pSh2->opStatus = status;
+
+    // Signal that op is done.
+    pSh2->pOp = 0;
+
+    return SH2_OK;
+}
+
+static void opOnReset(sh2_t* pSh2) {
+    if (pSh2->pOp != 0) {
+        if (pSh2->pOp->onReset != 0) {
+            // This operation has its own reset handler so use it.
+            pSh2->pOp->onReset(pSh2);
+        } else {
+            // No reset handler : abort the operation with SH2_ERR code
+            opCompleted(pSh2, SH2_ERR);
+        }
+    }
+}
+
 static uint8_t getReportLen(uint8_t reportId) {
     for (unsigned n = 0; n < ARRAY_LEN(sh2ReportLens); n++) {
         if (sh2ReportLens[n].id == reportId) {
@@ -619,16 +643,6 @@ static void sensorhubControlHdlr(
     }
 }
 
-static int opCompleted(sh2_t* pSh2, int status) {
-    // Record status
-    pSh2->opStatus = status;
-
-    // Signal that op is done.
-    pSh2->pOp = 0;
-
-    return SH2_OK;
-}
-
 static int opProcess(sh2_t* pSh2, const sh2_Op_t* pOp) {
     int status = SH2_OK;
     uint32_t start_us = 0;
@@ -644,6 +658,12 @@ static int opProcess(sh2_t* pSh2, const sh2_Op_t* pOp) {
     // While op not complete and not timed out.
     while ((pSh2->pOp != 0) && ((pOp->timeout_us == 0) ||
                                 ((now_us - start_us) < pOp->timeout_us))) {
+        if (pSh2->pShtp == 0) {
+            // Was SH2 interface closed unexpectedly?
+            pSh2->opStatus = SH2_ERR;
+            break;
+        }
+
         // Service SHTP to poll the device.
         shtp_service(pSh2->pShtp);
 
@@ -786,6 +806,11 @@ static void executableDeviceHdlr(
             // reset process is now done.
             pSh2->resetComplete = true;
 
+            // Send reset event to SH2 operation processor.
+            // Some commands may handle themselves.  Most will be aborted with
+            // SH2_ERR.
+            opOnReset(pSh2);
+
             // Notify client that reset is complete.
             sh2AsyncEvent.eventId = SH2_RESET;
             if (pSh2->eventCallback) {
@@ -862,7 +887,9 @@ static void getProdIdRx(sh2_t* pSh2, const uint8_t* payload, uint16_t len) {
             pProdId->reserved0 = resp->reserved0;
             pProdId->reserved1 = resp->reserved1;
 
-            if (pProdId->swPartNumber == 10004095) {
+            if ((pProdId->swPartNumber == 10004095) ||
+                (pProdId->swPartNumber == 10004818) ||
+                (pProdId->swPartNumber == 10005028)) {
                 // FSP200 has 5 product id entries
                 pSh2->opData.getProdIds.expectedEntries = 5;
             }
@@ -1484,12 +1511,13 @@ static void reinitRx(sh2_t* pSh2, const uint8_t* payload, uint16_t len) {
         return;
 
     // Get return status
-    int status = SH2_OK;
     if (resp->r[0] != 0) {
-        status = SH2_ERR_HUB;
+        pSh2->opStatus = SH2_ERR_HUB;
+        opCompleted(pSh2, pSh2->opStatus);
+    } else {
+        pSh2->opStatus = SH2_OK;
+        opCompleted(pSh2, pSh2->opStatus);
     }
-
-    opCompleted(pSh2, status);
 }
 
 const sh2_Op_t reinitOp = {
@@ -1576,6 +1604,9 @@ static int setCalConfigStart(sh2_t* pSh2) {
     p[5] = (pSh2->opData.calConfig.sensors & SH2_CAL_ON_TABLE)
                ? 1
                : 0;  // on-table cal
+
+    p[6] =
+        (pSh2->opData.calConfig.sensors & SH2_CAL_ZERO_GYRO_CONTROL_MASK) >> 5;
 
     return sendCmd(pSh2, SH2_CMD_ME_CAL, p);
 }
@@ -1697,22 +1728,14 @@ static int clearDcdAndResetStart(sh2_t* pSh2) {
     return status;
 }
 
-static void clearDcdAndResetRx(
-    sh2_t* pSh2, const uint8_t* payload, uint16_t len) {
-    (void)payload;  // unused
-    (void)len;      // unused
-
-    // Ignore messages until reset cycle is complete.
-    if (!pSh2->resetComplete)
-        return;
-
-    // Complete this operation
+static void clearDcdAndResetOnReset(sh2_t* pSh2) {
+    // When reset is detected, this op is complete.
     opCompleted(pSh2, SH2_OK);
 }
 
 const sh2_Op_t clearDcdAndResetOp = {
     .start = clearDcdAndResetStart,
-    .rx = clearDcdAndResetRx,
+    .onReset = clearDcdAndResetOnReset,
 };
 
 // ------------------------------------------------------------------------
@@ -1909,7 +1932,9 @@ int sh2_open(
 void sh2_close(void) {
     sh2_t* pSh2 = &_sh2;
 
-    shtp_close(pSh2->pShtp);
+    if (pSh2->pShtp != 0) {
+        shtp_close(pSh2->pShtp);
+    }
 
     // Clear everything in sh2 structure.
     memset(pSh2, 0, sizeof(sh2_t));
@@ -1925,7 +1950,9 @@ void sh2_close(void) {
 void sh2_service(void) {
     sh2_t* pSh2 = &_sh2;
 
-    shtp_service(pSh2->pShtp);
+    if (pSh2->pShtp != 0) {
+        shtp_service(pSh2->pShtp);
+    }
 }
 
 /**
@@ -1954,6 +1981,10 @@ int sh2_setSensorCallback(sh2_SensorCallback_t* callback, void* cookie) {
 int sh2_devReset(void) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     return sendExecutable(pSh2, EXECUTABLE_DEVICE_CMD_RESET);
 }
 
@@ -1964,6 +1995,10 @@ int sh2_devReset(void) {
  */
 int sh2_devOn(void) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     return sendExecutable(pSh2, EXECUTABLE_DEVICE_CMD_ON);
 }
@@ -1977,6 +2012,10 @@ int sh2_devOn(void) {
 int sh2_devSleep(void) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     return sendExecutable(pSh2, EXECUTABLE_DEVICE_CMD_SLEEP);
 }
 
@@ -1988,6 +2027,10 @@ int sh2_devSleep(void) {
  */
 int sh2_getProdIds(sh2_ProductIds_t* prodIds) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2006,6 +2049,10 @@ int sh2_getProdIds(sh2_ProductIds_t* prodIds) {
  */
 int sh2_getSensorConfig(sh2_SensorId_t sensorId, sh2_SensorConfig_t* pConfig) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2028,6 +2075,10 @@ int sh2_setSensorConfig(
     sh2_SensorId_t sensorId, const sh2_SensorConfig_t* pConfig) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2047,6 +2098,10 @@ int sh2_setSensorConfig(
  */
 int sh2_getMetadata(sh2_SensorId_t sensorId, sh2_SensorMetadata_t* pData) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // pData must be non-null
     if (pData == 0)
@@ -2097,6 +2152,10 @@ int sh2_getMetadata(sh2_SensorId_t sensorId, sh2_SensorMetadata_t* pData) {
 int sh2_getFrs(uint16_t recordId, uint32_t* pData, uint16_t* words) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     if ((pData == 0) || (words == 0)) {
         return SH2_ERR_BAD_PARAM;
     }
@@ -2122,6 +2181,10 @@ int sh2_getFrs(uint16_t recordId, uint32_t* pData, uint16_t* words) {
  */
 int sh2_setFrs(uint16_t recordId, uint32_t* pData, uint16_t words) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     if ((pData == 0) && (words != 0)) {
         return SH2_ERR_BAD_PARAM;
@@ -2149,6 +2212,10 @@ int sh2_getErrors(
     uint8_t severity, sh2_ErrorRecord_t* pErrors, uint16_t* numErrors) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2169,6 +2236,10 @@ int sh2_getErrors(
 int sh2_getCounts(sh2_SensorId_t sensorId, sh2_Counts_t* pCounts) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2186,6 +2257,10 @@ int sh2_getCounts(sh2_SensorId_t sensorId, sh2_Counts_t* pCounts) {
  */
 int sh2_clearCounts(sh2_SensorId_t sensorId) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2209,6 +2284,10 @@ int sh2_setTareNow(
     sh2_TareBasis_t basis) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2228,6 +2307,10 @@ int sh2_setTareNow(
 int sh2_clearTare(void) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2244,6 +2327,10 @@ int sh2_clearTare(void) {
  */
 int sh2_persistTare(void) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2263,6 +2350,10 @@ int sh2_persistTare(void) {
  */
 int sh2_setReorientation(sh2_Quaternion_t* orientation) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2290,6 +2381,10 @@ int sh2_setReorientation(sh2_Quaternion_t* orientation) {
 int sh2_reinitialize(void) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     return opProcess(pSh2, &reinitOp);
 }
 
@@ -2300,6 +2395,10 @@ int sh2_reinitialize(void) {
  */
 int sh2_saveDcdNow(void) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     return opProcess(pSh2, &saveDcdNowOp);
 }
@@ -2312,6 +2411,10 @@ int sh2_saveDcdNow(void) {
  */
 int sh2_getOscType(sh2_OscType_t* pOscType) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     pSh2->opData.getOscType.pOscType = pOscType;
 
@@ -2327,6 +2430,10 @@ int sh2_getOscType(sh2_OscType_t* pOscType) {
 int sh2_setCalConfig(uint8_t sensors) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     pSh2->opData.calConfig.sensors = sensors;
 
     return opProcess(pSh2, &setCalConfigOp);
@@ -2341,6 +2448,10 @@ int sh2_setCalConfig(uint8_t sensors) {
 int sh2_getCalConfig(uint8_t* pSensors) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     pSh2->opData.getCalConfig.pSensors = pSensors;
 
     return opProcess(pSh2, &getCalConfigOp);
@@ -2354,6 +2465,10 @@ int sh2_getCalConfig(uint8_t* pSensors) {
  */
 int sh2_setDcdAutoSave(bool enabled) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2373,6 +2488,10 @@ int sh2_setDcdAutoSave(bool enabled) {
 int sh2_flush(sh2_SensorId_t sensorId) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2389,6 +2508,10 @@ int sh2_flush(sh2_SensorId_t sensorId) {
 int sh2_clearDcdAndReset(void) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     return opProcess(pSh2, &clearDcdAndResetOp);
 }
 
@@ -2400,6 +2523,10 @@ int sh2_clearDcdAndReset(void) {
  */
 int sh2_startCal(uint32_t interval_us) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2417,6 +2544,10 @@ int sh2_startCal(uint32_t interval_us) {
  */
 int sh2_finishCal(sh2_CalStatus_t* status) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
 
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2439,6 +2570,10 @@ int sh2_finishCal(sh2_CalStatus_t* status) {
 int sh2_setIZro(sh2_IZroMotionIntent_t intent) {
     sh2_t* pSh2 = &_sh2;
 
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // clear opData
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
 
@@ -2456,6 +2591,11 @@ int sh2_reportWheelEncoder(
     int16_t wheelData,
     uint8_t dataType) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     // No callback (am i doing this right?)
     pSh2->pOp = 0;
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
@@ -2469,6 +2609,11 @@ int sh2_reportWheelEncoder(
 
 int sh2_saveDeadReckoningCalNow(void) {
     sh2_t* pSh2 = &_sh2;
+
+    if (pSh2->pShtp == 0) {
+        return SH2_ERR;  // sh2 API isn't open
+    }
+
     memset(&pSh2->opData, 0, sizeof(sh2_OpData_t));
     pSh2->opData.sendCmd.req.command = SH2_CMD_DR_CAL_SAVE;
 

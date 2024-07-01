@@ -31,7 +31,7 @@ bool init_adc() {
     return true;
 }
 
-float read_Vbatt() {
+float read_Vbatt(const bool verbose) {
     return 3.77f;
 }
 
@@ -76,7 +76,7 @@ bool init_adc() {
     return true;
 }
 
-float read_Vbatt() {
+float read_Vbatt(const bool verbose) {
     int err;
     int16_t buf;
     struct adc_sequence sequence = {
@@ -111,6 +111,11 @@ float read_Vbatt() {
     static const float R2 = 30.9e3;
     static const float alpha = 1.0 + R1 / R2;
     float Vbatt = Vain * alpha;
+
+    if (verbose) {
+        LOG_INF("Vain: %d mV", Vain_mv);
+        LOG_INF("Vbatt: %.2f V", Vbatt);
+    }
 
     return Vbatt;
 }

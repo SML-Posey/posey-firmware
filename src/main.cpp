@@ -22,7 +22,7 @@ int main() {
     RateTask rtmain(task, 50);
 #elif defined(CONFIG_ROLE_WATCH)
     TaskWatch task(imu, writer);
-    RateTask rtmain(task, 50);
+    RateTask rtmain(task, 100);
 #elif defined(CONFIG_ROLE_RING)
     TaskRing task();
 #endif

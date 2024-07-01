@@ -7,7 +7,7 @@ extern "C" {
 #include <stdbool.h>
 
 bool init_adc();
-float read_Vbatt();
+float read_Vbatt(const bool verbose);
 void deep_sleep();
 
 #ifdef __cplusplus

@@ -1,4 +1,4 @@
-rsource "drivers/sensor/bno08x/Kconfig"
+rsource "drivers/sensors/ceva/bno08x/Kconfig"
 source "Kconfig.zephyr"
 
 choice

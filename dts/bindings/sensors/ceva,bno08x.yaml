@@ -1,0 +1,25 @@
+compatible: "ceva,bno08x"
+
+include: ["spi-device.yaml", "sensor-device.yaml"]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      This property specifies the connection for the active LOW interrupt.
+  reset-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      This property specifies the connection for the active LOW hardware reset.
+  ps0-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      This property specifies the connection for the active HIGH protocol select (PS) pin 0.
+  ps1-gpios:
+    type: phandle-array
+    required: true
+    description: |
+      This property specifies the connection for the active HIGH protocol select (PS) pin 1.

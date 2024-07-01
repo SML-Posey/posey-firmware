@@ -12,7 +12,7 @@ set(POSEY_ROLE CACHE STRING "Role (HUB, WATCH, or RING)")
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(posey-firmware)
 
-add_subdirectory(drivers/sensor/bno08x)
+add_subdirectory(drivers/sensors/ceva/bno08x)
 
 file(GLOB_RECURSE SRCS_CPP ${CMAKE_SOURCE_DIR}/src/*.cpp)
 file(GLOB_RECURSE SRCS_C ${CMAKE_SOURCE_DIR}/src/*.c)
@@ -20,6 +20,6 @@ target_sources(app PRIVATE ${SRCS_CPP} ${SRCS_C})
 target_include_directories(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/posey-lib
-    ${CMAKE_SOURCE_DIR}/drivers/sensor/bno08x)
+    ${CMAKE_SOURCE_DIR}/drivers/sensors/ceva/bno08x)
 
 zephyr_library_include_directories(.)

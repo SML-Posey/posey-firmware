@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 NordicNUSWriter writer;
 NordicNUSReader reader;
 
-#ifdef CONFIG_BNO08x
+#ifdef CONFIG_BNO08X
 IMU_BNO08x imu;
 #else
 IMU_Stub imu;
