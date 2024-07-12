@@ -123,13 +123,12 @@ static struct bt_nus_client nus_clients[MaxSensors];
 static char scan_name[30];
 static struct bt_conn* scan_conn = NULL;
 
-static struct bt_data ad[] = {
+static const struct bt_data ad[] = {
     BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-    BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN)};
+    BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL)};
 
-static const struct bt_data sd[] = {
-    BT_DATA_BYTES(BT_DATA_UUID128_ALL, BT_UUID_NUS_VAL),
-};
+static struct bt_data sd[] = {
+    BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN)};
 
 static uint8_t slot_from_conn(struct bt_conn* const conn) {
     if (conn == NULL)
@@ -879,12 +878,12 @@ int init_nus() {
 
     // Update the BLE name using the device config.
     size_t name_len = strlen(device_config.name);
-    ad[1].data = (uint8_t*)device_config.name;
-    ad[1].data_len = name_len;
+    sd[0].data = (uint8_t*)device_config.name;
+    sd[0].data_len = name_len;
 
     bt_set_name(device_config.name);
 
-    LOG_INF("Starting BLE advertising with name %s", ad[1].data);
+    LOG_INF("Starting BLE advertising with name %s", sd[0].data);
     err =
         bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (err) {

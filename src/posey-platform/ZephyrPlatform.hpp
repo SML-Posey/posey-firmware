@@ -34,11 +34,11 @@ extern IMU_Stub imu;
     #include "posey-platform/platform/sensors/BLE_Zephyr.hpp"
 extern BLE_Zephyr ble;
 
-    #include "tasks/TaskWaist.hpp"
+    #include "TaskWaist.hpp"
 #elif defined(CONFIG_ROLE_WATCH)
-    #include "tasks/TaskWatch.hpp"
+    #include "TaskWatch.hpp"
 #elif defined(CONFIG_ROLE_RING)
-    #include "tasks/TaskRing.hpp"
+    #include "TaskRing.hpp"
 #else
     #error "No valid role defined!"
 #endif

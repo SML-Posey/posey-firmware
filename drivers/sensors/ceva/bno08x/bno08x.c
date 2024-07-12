@@ -62,11 +62,11 @@ void ceva_bno08x_hardware_reset(const struct device* dev) {
         (const struct ceva_bno08x_config*)dev->config;
 
     gpio_pin_set_dt(&config->reset_gpio, 0);
-    k_sleep(K_MSEC(10));
+    k_sleep(K_MSEC(15));
     gpio_pin_set_dt(&config->reset_gpio, 1);
-    k_sleep(K_MSEC(10));
+    k_sleep(K_MSEC(15));
     gpio_pin_set_dt(&config->reset_gpio, 0);
-    k_sleep(K_MSEC(10));
+    k_sleep(K_MSEC(15));
 }
 
 bool ceva_bno08x_int_active(const struct device* dev) {

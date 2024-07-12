@@ -27,8 +27,9 @@ constexpr bool using_gyro = false;
 constexpr bool using_mag = false;
 constexpr bool using_quat = true;
 
-// constexpr uint32_t sample_period_us = 5000;  // 5ms -> 200 Hz
-constexpr uint32_t sample_period_us = 10000;  // 10ms -> 100 Hz
+constexpr float freq = 200;                  // Hz
+constexpr uint32_t sample_period_us = 5000;  // 5ms -> 200 Hz
+// constexpr uint32_t sample_period_us = 10000;  // 10ms -> 100 Hz
 // constexpr uint32_t sample_period_us = 100000;  // 100ms -> 10 Hz
 
 static bool accel_enabled = false;
@@ -291,7 +292,7 @@ void imu_sensor_handler(
 IMU_BNO08x::IMU_BNO08x() {}
 
 bool IMU_BNO08x::setup() {
-    _dev = DEVICE_DT_GET(DT_INST(0, ceva_bno08x));
+    _dev = DEVICE_DT_GET_ANY(ceva_bno08x);
 
     if (_dev == nullptr) {
         LOG_WRN("Could not get BNO08x device");
@@ -302,7 +303,7 @@ bool IMU_BNO08x::setup() {
     data->user_event_handler = imu_event_handler;
     data->user_sensor_handler = imu_sensor_handler;
 
-    k_msleep(50);
+    k_usleep(100);
     sh2_devReset();
     k_msleep(50);
 
@@ -370,12 +371,12 @@ bool IMU_BNO08x::collect() {
         // Check for consecutive data misses.
         constexpr float LowRateThreshold = 0.95;
         bool low_accel_rate =
-            using_accel && (accel_rate < (100 * LowRateThreshold));
+            using_accel && (accel_rate < (freq * LowRateThreshold));
         bool low_gyro_rate =
-            using_gyro && (gyro_rate < (100 * LowRateThreshold));
-        bool low_mag_rate = using_mag && (mag_rate < (100 * LowRateThreshold));
+            using_gyro && (gyro_rate < (freq * LowRateThreshold));
+        bool low_mag_rate = using_mag && (mag_rate < (freq * LowRateThreshold));
         bool low_quat_rate =
-            using_quat && (quat_rate < (100 * LowRateThreshold));
+            using_quat && (quat_rate < (freq * LowRateThreshold));
         bool low_rates =
             low_accel_rate || low_gyro_rate || low_mag_rate || low_quat_rate;
 
@@ -383,8 +384,8 @@ bool IMU_BNO08x::collect() {
         if (low_rates) {
             consecutive_low_rates++;
 
-            // If we miss ~60 seconds of data, reboot the system.
-            if (consecutive_low_rates > 60) {
+            // If we miss ~20 seconds of data, reboot the system.
+            if (consecutive_low_rates > 20) {
                 LOG_ERR(
                     "Low IMU rates for too long (%d s), rebooting",
                     consecutive_low_rates);
