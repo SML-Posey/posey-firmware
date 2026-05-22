@@ -61,6 +61,8 @@ void ceva_bno08x_hardware_reset(const struct device* dev) {
     const struct ceva_bno08x_config* config =
         (const struct ceva_bno08x_config*)dev->config;
 
+    LOG_WRN("Resetting IMU...");
+
     gpio_pin_set_dt(&config->reset_gpio, 0);
     k_sleep(K_MSEC(15));
     gpio_pin_set_dt(&config->reset_gpio, 1);
@@ -232,7 +234,7 @@ static int ceva_bno08x_sh2_hal_write(
         (struct ceva_bno08x_config*)hal->dev->config;
 
     // Assert PS0/Wake to initiate interaction if necessary.
-    gpio_pin_set_dt(&config->ps0_gpio, 0);
+    // gpio_pin_set_dt(&config->ps0_gpio, 0);
 
     if (!ceva_bno08x_wait_for_int(hal->dev)) {
         gpio_pin_set_dt(&config->ps0_gpio, 1);
@@ -398,6 +400,8 @@ static int ceva_bno08x_init(const struct device* dev) {
         LOG_WRN("Failed to init irq");
         return ret;
     }
+
+    sh2_service();
 
     LOG_INF("Done: ret=%d", ret);
 

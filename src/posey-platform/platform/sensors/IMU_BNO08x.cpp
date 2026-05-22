@@ -304,8 +304,16 @@ bool IMU_BNO08x::setup() {
     data->user_sensor_handler = imu_sensor_handler;
 
     k_usleep(100);
-    sh2_devReset();
-    k_msleep(50);
+    LOG_INF("IMU service");
+    sh2_service();
+    int ret = sh2_devReset();
+    LOG_INF("IMU reset: %d", ret);
+    k_msleep(10);
+    LOG_INF("IMU service");
+    sh2_service();
+    ret = sh2_devOn();
+    LOG_INF("Dev on: %d", ret);
+    k_msleep(10);
 
     return true;
 }
